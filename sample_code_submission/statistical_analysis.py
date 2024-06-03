@@ -25,18 +25,18 @@ def pbinit(kmin, kmax):
 
 # computation from data
 
-def S(sample):
+def S_f(sample):
     """
     function that isolate the signal from the sample
     """
-    pass
+    return sum(sample)
 
 
-def B(sample):
+def B_f(sample):
     """
     function that isolate the signal from the sample
     """
-    pass
+    return len(sample) - sum(sample)
 
 # computation
 
@@ -174,7 +174,39 @@ def loglik_estimation(model: function, sample, stats_law: scipy.stats):
     """
     function that compute the loglikelihood estimation
     """
-    pass
+    S = S_f(sample)
+    B = B_f(sample)
+    n = S+B
+    mu_axis_values = np.linspace(0, 2, 200)
+    loglike_values = np.array(
+        [log_likelihood(mu, model, n, stats_law) for mu in mu_axis_values])
+
+    plt.plot(mu_axis_values, loglike_values -
+             min(loglike_values), label='log-likelihood')
+    plt.hlines(1, min(mu_axis_values), max(mu_axis_values),
+               linestyle='--', color='tab:gray')
+
+    # This is the code to search for which mu values the log-likelihood ratio takes
+    # the value 1. For this we pick up first the indexes:
+    idx = np.argwhere(
+        np.diff(np.sign(loglike_values-min(loglike_values)-1))).flatten()
+
+    # and we plot then the position of the mu values:
+    plt.plot(mu_axis_values[idx], [1, 1], 'ko', label=r'$1\sigma$ interval')
+    plt.plot(mu_axis_values[idx[0]]*np.ones(2), [0, 1], 'k--')
+    plt.plot(mu_axis_values[idx[1]]*np.ones(2), [0, 1], 'k--')
+    plt.xlabel(r'$\mu$')
+    plt.ylabel(r'$-2\log {\cal L}(\mu)/{\cal L}(\hat{\mu})$')
+    plt.title(r'Log-likelihood profile with respect to $\mu$')
+
+    # If the log-likelihood ratio is parabolic, sigma_mu is just the half of the
+    # difference between the 2 intersection points of the likelihood ratio with 1.
+    sigma_mu = np.diff(mu_axis_values[idx])/2
+
+    plt.plot(mu_axis_values, ((mu_axis_values-1)/sigma_mu)**2, linestyle='-.',
+             color='tab:gray', label='parabola approximation')
+    plt.legend(facecolor='w')
+    plt.show()
 
 
 def binned_shape_loglikelihood(model: function, sample, stats_law: scipy.stats):
