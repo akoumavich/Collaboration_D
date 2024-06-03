@@ -2,6 +2,43 @@ import numpy as np
 from HiggsML.systematics import systematics
 import scipy
 import scipy.stats as st
+from IPython.display import set_matplotlib_formats, display
+from scipy.optimize import minimize
+from matplotlib import pyplot as plt
+from numpy import NaN
+
+# progressbar
+
+
+def progressbar(value, max=100):
+    """
+    function that make a progressbar, useful to see if the code is working or just crashing
+    """
+    from IPython.display import HTML
+    return HTML("""<progress value='{value}' max='{max}' style='width: 100%'>
+    {value}</progress>""".format(value=value, max=max))
+
+
+def pbinit(kmin, kmax):
+    return display(progressbar(kmin, kmax), display_id=True)
+
+
+# computation from data
+
+def S(sample):
+    """
+    function that isolate the signal from the sample
+    """
+    pass
+
+
+def B(sample):
+    """
+    function that isolate the signal from the sample
+    """
+    pass
+
+# computation
 
 
 def compute_mu(score, weight, saved_info):
@@ -70,7 +107,7 @@ def calculate_saved_info(model, train_set):
 # function computing the likelihood
 
 # stats_law from Statistical functions (scipy.stats)
-def likelihood(function: function, mu: float, model: function, n: int, stat_law: scipy.stats):
+def likelihood(mu: float, model: function, n: int, stat_law: scipy.stats):
     """
     function computing the likelihood
     input: the function; mu; the model; n an interger and the statistical law
@@ -98,3 +135,57 @@ def model(mu: float, S: int, B: int):
     output : float the result
     """
     return mu*S+B
+
+
+def histo_mu(model: function, sample, stats_law: scipy.stats):
+    """
+    function to see the distribution of mu estimator according to the sample
+    """
+    nsim = len(sample)
+
+    S_sample = S(sample)
+    B_sample = B(sample)
+    n_sample = S_sample + B_sample
+
+    mu_sample = np.zeros([nsim, 1])
+    pb = pbinit(0, nsim)
+    for idx, n in np.ndenumerate(n_sample):
+        pb.update(progressbar(idx[0], nsim))
+        res = minimize(lambda mu: log_likelihood(mu, model, n, stats_law), .5)
+        mu_sample[idx] = res.x[0]
+
+    fig, fig_axes = plt.subplots(ncols=3, nrows=1)
+    fig.set_size_inches(w=14, h=3)
+    fig_axes[0].hist(mu_sample, density=True)
+    fig_axes[0].set_xlabel(r'$\mu$')
+    fig_axes[0].set_title(r'Fitted $\mu$' + '\n distribution')
+    fig_axes[1].plot(S_sample, mu_sample, 'k+')
+    fig_axes[1].set_xlabel('$S$')
+    fig_axes[1].set_ylabel(r'$\mu$')
+    fig_axes[1].set_title(r'Fitted $\mu$' + '\n vs. true $S$ in data')
+    fig_axes[2].plot(B_sample, mu_sample, 'k+')
+    fig_axes[2].set_xlabel('$B$')
+    fig_axes[2].set_ylabel(r'$\mu$')
+    fig_axes[2].set_title(r'Fitted $\mu$' + '\n vs. true $B$ in data')
+    plt.show()
+
+
+def loglik_estimation(model: function, sample, stats_law: scipy.stats):
+    """
+    function that compute the loglikelihood estimation
+    """
+    pass
+
+
+def binned_shape_loglikelihood(model: function, sample, stats_law: scipy.stats):
+    """
+    function that compute the binned shape loglikelihood estimation
+    """
+    pass
+
+
+def profile_loglikelihood(model: function, sample, stats_law: scipy.stats):
+    """
+    function that compute the binned shape loglikelihood estimation
+    """
+    pass
