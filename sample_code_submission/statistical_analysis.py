@@ -109,7 +109,7 @@ def calculate_saved_info(model, train_set):
 # function computing the likelihood
 
 # stats_law from Statistical functions (scipy.stats)
-def likelihood(mu: float, model: function, n: int, stat_law: scipy.stats):
+def likelihood(mu: float, model, n: int, stat_law: scipy.stats):
     """
     function computing the likelihood
     input: the function; mu; the model; n an interger and the statistical law
@@ -118,7 +118,7 @@ def likelihood(mu: float, model: function, n: int, stat_law: scipy.stats):
     return stat_law.pmf(n, model(mu))
 
 
-def log_likelihood(function: function, mu: float, model: function, n: int, stat_law: scipy.stats):
+def log_likelihood(function, mu: float, model, n: int, stat_law: scipy.stats):
     """
     function computing the log likelihood
     input: the function; mu; the model; n an interger and the statistical law
@@ -139,7 +139,7 @@ def model(mu: float, S: int, B: int):
     return mu*S+B
 
 
-def histo_mu(model: function, sample, stats_law: scipy.stats):
+def histo_mu(model, sample, stats_law: scipy.stats):
     """
     function to see the distribution of mu estimator according to the sample
     """
@@ -172,7 +172,7 @@ def histo_mu(model: function, sample, stats_law: scipy.stats):
     plt.show()
 
 
-def loglik_estimation(model: function, sample, stats_law: scipy.stats):
+def loglik_estimation(model, sample, stats_law: scipy.stats):
     """
     function that compute the loglikelihood estimation
     """
@@ -244,7 +244,7 @@ def Background(x):
     return norm_background*(x0-b*x)
 
 
-def binned_shape_loglikelihood(model: function, sample, stats_law: scipy.stats):
+def binned_shape_loglikelihood(model, sample, stats_law: scipy.stats):
     """
     function that compute the binned shape loglikelihood estimation
     """
@@ -307,9 +307,16 @@ def binned_shape_loglikelihood(model: function, sample, stats_law: scipy.stats):
     plt.plot(mu_axis_values, ((mu_axis_values-1)/sigma_mu)**2, linestyle='-.',
              color='tab:gray', label='parabola approx.')
     plt.show()
+    # Defining the binned log-likelihood best fit mu parameter:
+    muhat = mu_axis_values[np.argmin(binned_loglike_values)]
+
+    # Printing the output of the fit:
+    print('Shape analysis. Best fit parameter and uncertainty:\n')
+    pprint(muhat, mu_axis_values[idx[1]] - muhat,
+           abs(mu_axis_values[idx[0]] - muhat))
 
 
-def profile_loglikelihood(model: function, sample, stats_law: scipy.stats):
+def profile_loglikelihood(model, sample, stats_law: scipy.stats):
     """
     function that compute the binned shape loglikelihood estimation
     """
