@@ -1,6 +1,8 @@
+import pprint
 import numpy as np
 from HiggsML.systematics import systematics
 import scipy
+from scipy import integrate
 import scipy.stats as st
 from IPython.display import set_matplotlib_formats, display
 from scipy.optimize import minimize
@@ -143,8 +145,8 @@ def histo_mu(model: function, sample, stats_law: scipy.stats):
     """
     nsim = len(sample)
 
-    S_sample = S(sample)
-    B_sample = B(sample)
+    S_sample = S_f(sample)
+    B_sample = B_f(sample)
     n_sample = S_sample + B_sample
 
     mu_sample = np.zeros([nsim, 1])
@@ -207,13 +209,104 @@ def loglik_estimation(model: function, sample, stats_law: scipy.stats):
              color='tab:gray', label='parabola approximation')
     plt.legend(facecolor='w')
     plt.show()
+    # Defining the best fit value of parameter mu
+    muhat = mu_axis_values[np.argmin(loglike_values)]
+
+    # Printing the numerical outputs of the fit of mu parameter:
+    print('Counting analysis. Best fit parameter and uncertainty:\n')
+    pprint(muhat, mu_axis_values[idx[1]] - muhat,
+           abs(mu_axis_values[idx[0]] - muhat))
+
+
+# binned shape loglikelihood
+
+def Signal(x):
+    """
+    modélisation de notre signal
+    """
+    # pour le moment c'est l'exemple de tout à l'heure que j'ai repris
+    xmin = 0
+    xmax = 10
+    norm_signal = 3/(xmax**3-xmin**3)
+    return norm_signal*x**2
+
+
+def Background(x):
+    """
+    modélisation de notre background
+    """
+    # pour le moment c'est l'exemple de tout à l'heure que j'ai repris
+    xmin = 0
+    xmax = 10
+    x0 = 10
+    b = 1
+    norm_background = 1/(x0*(xmax-xmin)-.5*b*(xmax**2-xmin**2))
+    return norm_background*(x0-b*x)
 
 
 def binned_shape_loglikelihood(model: function, sample, stats_law: scipy.stats):
     """
     function that compute the binned shape loglikelihood estimation
     """
-    pass
+    # We fix here some more or less arbitrary binning:
+    x_bin_edges = np.arange(0, 10.5, .5)
+
+    # We initialize the probability of an event being a signal or background one to 0.
+    pS = np.zeros([np.size(x_bin_edges)-1, 1])
+    pB = np.zeros([np.size(x_bin_edges)-1, 1])
+    for k in np.arange(0, np.size(x_bin_edges)-1):
+        pS[k] = integrate.quad(Signal, x_bin_edges[k], x_bin_edges[k+1])[0]
+        pB[k] = integrate.quad(Background, x_bin_edges[k], x_bin_edges[k+1])[0]
+
+    S = S_f(sample)
+    B = B_f(sample)
+    n = S+B
+
+    y = np.round(1*S*pS + B*pB)
+
+    def BinContent(k, mu):
+        return mu*S*pS[k]+B*pB[k]
+
+    # We define the likelihood for a single bin"
+    def likp(k, yk, mu):
+        return stats_law(BinContent(k, mu)).pmf(yk)
+
+    def bll(mu):
+        return -2*sum([np.log(likp(k, y[k], mu)) for k in range(0, np.size(y))])
+
+    EPS = 0.0001  # trick to avoid potential division by zero during the minimization
+    # Forbids parameter values to be negative, so mu>EPS here.
+    par_bnds = ((EPS, None))
+    par0 = 0.5  # quick bad guess to start with some value of mu...
+    res = minimize(bll, par0, bounds=par_bnds[1])
+
+    if res.success:
+        print(f'mu = {res.x[0]:.3f}')
+
+    mu_axis_values = np.linspace(0.5, 1.5, 200)
+    binned_loglike_values = np.array(
+        [bll(mu) for mu in mu_axis_values]).flatten()
+
+    plt.plot(mu_axis_values, binned_loglike_values - min(binned_loglike_values),
+             label='binned log-likelihood')
+    plt.hlines(1, min(mu_axis_values), max(mu_axis_values),
+               linestyle='--', color='tab:gray')
+
+    idx = np.argwhere(np.diff(np.sign(
+        binned_loglike_values - min(binned_loglike_values) - 1
+    ))).flatten()
+
+    plt.xlabel(r'$\mu$')
+    plt.ylabel(r'$-2\log {\cal L}(\mu) + 2\log {\cal L}_{\rm min}$')
+    plt.title(r'Log-likelihood profile with respect to $\mu$')
+
+    plt.plot(mu_axis_values[idx], [1, 1], 'ko', label=r'$1\sigma$ interval')
+    plt.plot(mu_axis_values[idx[0]]*np.ones(2), [0, 1], 'k--')
+    plt.plot(mu_axis_values[idx[1]]*np.ones(2), [0, 1], 'k--')
+    sigma_mu = np.diff(mu_axis_values[idx])/2
+    plt.plot(mu_axis_values, ((mu_axis_values-1)/sigma_mu)**2, linestyle='-.',
+             color='tab:gray', label='parabola approx.')
+    plt.show()
 
 
 def profile_loglikelihood(model: function, sample, stats_law: scipy.stats):
