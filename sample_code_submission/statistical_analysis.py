@@ -1,5 +1,7 @@
 import numpy as np
 from HiggsML.systematics import systematics
+import scipy
+import scipy.stats as st
 
 
 def compute_mu(score, weight, saved_info):
@@ -12,7 +14,6 @@ def compute_mu(score, weight, saved_info):
 
     score = score.flatten() > 0.5
     score = score.astype(int)
-
 
     mu = (np.sum(score * weight) - saved_info["beta"]) / saved_info["gamma"]
     del_mu_stat = (
@@ -64,3 +65,36 @@ def calculate_saved_info(model, train_set):
     print("saved_info", saved_info)
 
     return saved_info
+
+
+# function computing the likelihood
+
+# stats_law from Statistical functions (scipy.stats)
+def likelihood(function: function, mu: float, model: function, n: int, stat_law: scipy.stats):
+    """
+    function computing the likelihood
+    input: the function; mu; the model; n an interger and the statistical law
+    output: function
+    """
+    return stat_law.pmf(n, model(mu))
+
+
+def log_likelihood(function: function, mu: float, model: function, n: int, stat_law: scipy.stats):
+    """
+    function computing the log likelihood
+    input: the function; mu; the model; n an interger and the statistical law
+    output: fuction
+    """
+    llh = likelihood(function, mu, model, n, stat_law)
+    return -2*np.log(llh)
+
+# model
+
+
+def model(mu: float, S: int, B: int):
+    """
+    function computing mu according to the model see in class
+    input: mu; S and B
+    output : float the result
+    """
+    return mu*S+B
