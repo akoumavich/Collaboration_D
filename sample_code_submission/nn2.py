@@ -55,22 +55,15 @@ class NeuralNetwork(pl.LightningModule):
         wandb.login()
         wandb.init(project="higgsml")
         wb_logger = WandbLogger(project="higgsml")
-        trainer = pl.Trainer(max_epochs=1, accelerator='auto', enable_progress_bar = False, logger=wb_logger)
 
+        trainer = pl.Trainer(max_epochs=0, accelerator='auto', enable_progress_bar = False, logger=wb_logger)
         trainer.fit(self, train_dataloaders = train_dl)
 
-    def predict_step(self, batch):
-        out = self.model(batch)
-        return out
-
-
     def predict(self, test_data):
-        print("test_data " + str(type(test_data)))
-        print(test_data)
-        test = self.scaler.transform(test_data)
-        test = torch.tensor(test, dtype=torch.float32)
-        test_dl = DataLoader(test, batch_size=512)
-        trainer = pl.Trainer()
-        pred = trainer.predict(self, dataloaders = test_dl)
-        
+        test_data = self.scaler.transform(test_data)
+        test_data = torch.tensor(test_data, dtype=torch.float32)
+
+        with torch.no_grad():
+            pred = self.model(test_data).argmax(dim = 1).detach().numpy()
+        print(type(pred))
         return pred
