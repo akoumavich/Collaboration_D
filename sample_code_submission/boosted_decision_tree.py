@@ -51,7 +51,3 @@ print(y_pred[:10])
 print('roc_auc_score :' ,model.auc_score(test_set['labels'],y_pred,test_set) )
 accuracy=accuracy_score(test_set['labels'],y_pred_binary)
 print(f"accuracy: {accuracy}")
-
-
-    
-
