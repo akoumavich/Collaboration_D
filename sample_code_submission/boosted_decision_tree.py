@@ -36,7 +36,6 @@ from HiggsML.datasets import BlackSwan_public_dataset as public_dataset
 
 data=public_dataset()
 data.load_train_set()
-data.load_test_set()
 data_set=data.get_train_set()
 train_set, test_set= train_test_split(data_set, test_size=0.2, random_state=42,reweight=True)
 model=BoostedDecisionTree(data_set)
