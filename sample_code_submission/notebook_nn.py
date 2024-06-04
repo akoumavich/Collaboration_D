@@ -1,4 +1,3 @@
-import tensorflow as tf
 from model2 import *
 #from neural_network import *
 from nn2 import *
@@ -63,5 +62,4 @@ else:
 data.load_train_set()
 ingestion = Ingestion(data)
 ingestion.init_submission(Model)
-print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 ingestion.fit_submission()

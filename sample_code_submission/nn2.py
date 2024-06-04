@@ -34,15 +34,16 @@ class NeuralNetwork(pl.LightningModule):
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
         self.scaler = StandardScaler()
         self.predictions = []
+        self.real_labels = []
         
     def training_step(self, batch, batch_idx):
         x, y = batch
         #y = y.type(torch.LongTensor).to(self.device)
         y_hat = self.model(x)
-        self.predictions.append([y_hat, y])
+        self.predictions.extend(y_hat.argmax(dim=-1).squeeze(0).cpu().numpy())
+        self.real_labels.extend(y.cpu().numpy())
         loss = self.loss_fn(y_hat, y)
         self.log('train_loss', loss)
-        self.log('train_accuracy', np.mean(y == torch.argmax(y_hat, dim=1)))
         return loss
 
     def configure_optimizers(self):
@@ -55,16 +56,15 @@ class NeuralNetwork(pl.LightningModule):
         X_train = torch.tensor(X_train, dtype=torch.float32)
         y_train = torch.tensor(y_train, dtype=torch.long)
         
-        train_dl = DataLoader(TensorDataset(X_train, y_train), batch_size=32, shuffle=True)
+        train_dl = DataLoader(TensorDataset(X_train, y_train), batch_size=512, shuffle=True)
         wandb.login()
         wandb.init(project="higgsml")
         wb_logger = WandbLogger(project="higgsml")
-        trainer = pl.Trainer(max_epochs=5, accelerator='auto', enable_progress_bar = False, logger=wb_logger)
-        self.predictions = torch.tensor(self.predictions)
-        preds = self.predictions[:, 0]
-        reals = self.predictions[:, 1]
-        self.log('final_train_accuracy', np.mean(reals == torch.argmax(preds, dim=1)))
+        trainer = pl.Trainer(max_epochs=1, accelerator='auto', enable_progress_bar = False, logger=wb_logger)
         trainer.fit(self, train_dataloaders = train_dl)
+        preds = np.array(self.predictions)
+        labels = np.array(self.real_labels)
+        print("Training Accuracy: ", np.mean(labels == preds))
 
     def predict(self, test_data):
         test_data = self.scaler.transform(test_data)
