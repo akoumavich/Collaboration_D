@@ -23,7 +23,7 @@ class NeuralNetwork:
         self.model.add(Dense(1, activation="sigmoid"))
 
         self.model.compile(
-            loss="binary_crossentropy", optimizer="adam", metrics=["accuracy"]
+            loss="binary_crossentropy", optimizer="adam", metrics=["accuracy"]   
         )
         self.scaler = StandardScaler()
 

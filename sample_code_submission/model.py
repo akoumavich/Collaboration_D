@@ -78,6 +78,8 @@ class Model:
             self.train_set["weights"][self.train_set["labels"] == 0].sum(),
         )
         print(" \n ")
+        print(" \n ")
+        print(" \n ")
 
         self.training_set, self.valid_set = train_test_split(
             data_set=self.train_set, test_size=0.3, random_state=42, reweight=True
