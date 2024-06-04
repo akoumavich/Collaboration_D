@@ -22,10 +22,10 @@ class BoostedDecisionTree:
         self.model = classifiers[classifier]
         self.scaler = StandardScaler()
 
-    def fit(self, train_data, labels, weights=None):
+    def fit(self, train_data, labels, weights=None,eval_metric="error"):
         self.scaler.fit_transform(train_data)
         X_train_data = self.scaler.transform(train_data)
-        self.model.fit(X_train_data, labels, weights, eval_metric="error")
+        self.model.fit(X_train_data, labels, weights, eval_metric=eval_metric)
 
     def predict(self, test_data):
         test_data = self.scaler.transform(test_data)
@@ -39,15 +39,27 @@ class BoostedDecisionTree:
         return roc_auc_score(y_test,y_pred,sample_weight=self.get_weights(data_set))
 from HiggsML.datasets import BlackSwan_public_dataset as public_dataset
 
+threshholds=np.arange(0.0001,0.0011,0.0001)
+roc_auc=[]
+accuracy=[]
 data=public_dataset()
 data.load_train_set()
 data_set=data.get_train_set()
 train_set, test_set= train_test_split(data_set, test_size=0.2, random_state=42,reweight=True)
-model=BoostedDecisionTree(data_set,'XGBoost')
-model.fit(train_set['data'],train_set['labels'],train_set['weights'])
-y_pred=model.predict(test_set['data'])
-y_pred_binary=model.predict_binary(test_set['data'])
-print(y_pred[:10])
-print('roc_auc_score :' ,model.auc_score(test_set['labels'],y_pred,test_set) )
-accuracy=accuracy_score(test_set['labels'],y_pred_binary)
-print(f"accuracy: {accuracy}")
+for threshhold in threshholds:
+    model=BoostedDecisionTree(data_set,'XGBoost')
+    model.fit(train_set['data'],train_set['labels'],train_set['weights'],eval_metric=f"error@{threshhold}")
+    y_pred=model.predict(test_set['data'])
+    y_pred_binary=model.predict_binary(test_set['data'])
+    print(y_pred[:10])
+    roc_auc.append(model.auc_score(test_set['labels'],y_pred,test_set) )
+    accuracy.append(accuracy_score(test_set['labels'],y_pred_binary))
+
+
+
+plt.plot(threshholds,accuracy)
+plt.title('Accuracy as a function of threshhold')
+plt.xlabel('Threshhold')
+plt.ylabel('Accuracy')
+plt.legend()
+plt.show()
