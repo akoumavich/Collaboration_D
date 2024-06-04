@@ -129,7 +129,7 @@ class Model:
 
             print("Model is BDT")
         else:
-            from neural_network import NeuralNetwork
+            from nn2 import NeuralNetwork
 
             self.model = NeuralNetwork(train_data=self.training_set["data"])
             self.name = "NN"
