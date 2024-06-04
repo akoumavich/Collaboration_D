@@ -15,7 +15,6 @@ class NeuralNetwork(pl.LightningModule):
     This Dummy class implements a neural network classifier
     change the code in the fit method to implement a neural network classifier
 
-
     """
 
     def __init__(self, train_data):
@@ -34,13 +33,16 @@ class NeuralNetwork(pl.LightningModule):
         self.loss_fn = nn.CrossEntropyLoss()
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
         self.scaler = StandardScaler()
+        self.predictions = []
         
     def training_step(self, batch, batch_idx):
         x, y = batch
         #y = y.type(torch.LongTensor).to(self.device)
         y_hat = self.model(x)
+        self.predictions.append([y_hat, y])
         loss = self.loss_fn(y_hat, y)
         self.log('train_loss', loss)
+        self.log('train_accuracy', np.mean(y == torch.argmax(y_hat, dim=1)))
         return loss
 
     def configure_optimizers(self):
@@ -58,7 +60,10 @@ class NeuralNetwork(pl.LightningModule):
         wandb.init(project="higgsml")
         wb_logger = WandbLogger(project="higgsml")
         trainer = pl.Trainer(max_epochs=5, accelerator='auto', enable_progress_bar = False, logger=wb_logger)
-
+        self.predictions = torch.tensor(self.predictions)
+        preds = self.predictions[:, 0]
+        reals = self.predictions[:, 1]
+        self.log('final_train_accuracy', np.mean(reals == torch.argmax(preds, dim=1)))
         trainer.fit(self, train_dataloaders = train_dl)
 
     def predict(self, test_data):
