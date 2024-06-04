@@ -2,8 +2,8 @@
 # Dummy Sample Submission
 # ------------------------------
 
-BDT = True
-NN = False
+BDT = False
+NN = True
 
 from statistical_analysis import calculate_saved_info, compute_mu
 from feature_engineering import feature_engineering
@@ -78,6 +78,8 @@ class Model:
             "sum_bkg_weights: ",
             self.train_set["weights"][self.train_set["labels"] == 0].sum(),
         )
+        print(" \n ")
+        print(" \n ")
         print(" \n ")
 
         self.training_set, self.valid_set = train_test_split(
