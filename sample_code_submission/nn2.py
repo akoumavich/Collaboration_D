@@ -24,14 +24,12 @@ class NeuralNetwork(pl.LightningModule):
         self.model = nn.Sequential(
             nn.Linear(train_data.shape[1], 10),
             nn.ReLU(),
-            nn.Linear(10, 10),
-            nn.ReLU(),
             nn.Linear(10, 2),
-            nn.Sigmoid()
+            nn.Softmax()
         )
         
         self.loss_fn = nn.CrossEntropyLoss()
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=2e-3)
         self.scaler = StandardScaler()
         self.predictions = []
         self.real_labels = []
@@ -50,7 +48,7 @@ class NeuralNetwork(pl.LightningModule):
         return self.optimizer
 
     def fit(self, train_data, y_train, weights_train=None):
-
+        print("train_data " + str(type(train_data)))
         self.scaler.fit_transform(train_data)
         X_train = self.scaler.transform(train_data)
         X_train = torch.tensor(X_train, dtype=torch.float32)
@@ -68,6 +66,9 @@ class NeuralNetwork(pl.LightningModule):
 
     def predict(self, test_data):
         test_data = self.scaler.transform(test_data)
-        pred = self.model.predict(test_data).flatten().ravel()
+        test_data = torch.tensor(test_data, dtype=torch.float32)
+
+        with torch.no_grad():
+            pred = self.model(test_data).argmax(dim = 1).detach().numpy()
         print(type(pred))
         return pred
