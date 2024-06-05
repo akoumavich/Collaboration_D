@@ -93,10 +93,10 @@ class NeuralNetwork(nn.Module):
 
     def predict(self, test_data):
         test_data = self.scaler.transform(test_data)
-        test_data = torch.tensor(test_data, dtype=torch.float32)
+        test_data = torch.tensor(test_data, dtype=torch.float32).to(self.device)
 
         with torch.no_grad():
-            pred = self(test_data).argmax(dim = 1).detach().numpy()
+            pred = self(test_data).argmax(dim = 1).cpu().numpy()
         
 
         return pred
