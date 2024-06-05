@@ -37,26 +37,26 @@ def significance_score(y_true, y_score, sample_weight=None):
 from HiggsML.datasets import BlackSwan_public_dataset as public_dataset
 from feature_engineering import feature_engineering
 
+if __name__=="__main__":
+    data=public_dataset()
+    data.load_train_set()
+    data_set=data.get_train_set()
+    model=BoostedDecisionTree(data_set,'XGBoost')
+    train_set, test_set= train_test_split(data_set, test_size=0.2, random_state=42,reweight=True)
+    model.fit(feature_engineering(train_set['data']),train_set['labels'],train_set['weights'])
+    y_pred=model.predict(feature_engineering(test_set['data']))
 
-data=public_dataset()
-data.load_train_set()
-data_set=data.get_train_set()
-model=BoostedDecisionTree(data_set,'XGBoost')
-train_set, test_set= train_test_split(data_set, test_size=0.2, random_state=42,reweight=True)
-model.fit(feature_engineering(train_set['data']),train_set['labels'],train_set['weights'])
-y_pred=model.predict(feature_engineering(test_set['data']))
-
-fsignificance_score = sklearn.metrics.make_scorer(significance_score)
-Z = significance_vscore(y_true=test_set["labels"], y_score=y_pred,sample_weight=test_set["weights"])
-print("Z:",Z)
-x = np.linspace(0, 1, num=len(Z))
-
-
-plt.plot(x, Z)
+    fsignificance_score = sklearn.metrics.make_scorer(significance_score)
+    Z = significance_vscore(y_true=test_set["labels"], y_score=y_pred,sample_weight=test_set["weights"])
+    print("Z:",Z)
+    x = np.linspace(0, 1, num=len(Z))
 
 
-plt.title("BDT Significance")
-plt.xlabel("Threshold")
-plt.ylabel("Significance")
-plt.legend()
-plt.show()
+    plt.plot(x, Z)
+
+
+    plt.title("BDT Significance")
+    plt.xlabel("Threshold")
+    plt.ylabel("Significance")
+    plt.legend()
+    plt.show()
