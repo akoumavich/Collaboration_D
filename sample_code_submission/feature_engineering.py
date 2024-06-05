@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import time
 
 
 def feature_engineering(df):
@@ -7,6 +8,9 @@ def feature_engineering(df):
     Perform feature engineering operations on the input dataframe
     and create a new dataframe with only the features required for training the model.
     """
+
+    # Measure time of execution
+    start = time.time()
 
     # Perform calculations to derive features from the DataFrame
     # and store the results in new columns
@@ -24,8 +28,6 @@ def feature_engineering(df):
     met_x = df["PRI_met"] * np.cos(df["PRI_met_phi"])
     met_y = df["PRI_met"] * np.sin(df["PRI_met_phi"])
 
-    n_jets = df["PRI_n_jets"]
-
     jet_leading_px = df["PRI_jet_leading_pt"] * np.cos(df["PRI_jet_leading_phi"])
     jet_leading_py = df["PRI_jet_leading_pt"] * np.sin(df["PRI_jet_leading_phi"])
     jet_leading_pz = df["PRI_jet_leading_pt"] * np.sinh(df["PRI_jet_leading_eta"])
@@ -38,47 +40,55 @@ def feature_engineering(df):
     for col in df:
         df[col][df[col] == -7] = np.nan
 
+    # Correct PRI_n_jets
+    n_jets = np.where(
+        np.isfinite(df["PRI_jet_leading_pt"]),
+        np.where(
+            np.isfinite(df["PRI_jet_subleading_pt"]),
+            # if PRI_leading_jet_pt != -7 and PRI_subleading_jet_pt != -7 => PRI_n_jets = 2
+            np.full_like(df["PRI_n_jets"], 2),
+            # if PRI_leading_jet_pt != -7 and PRI_subleading_jet_pt == -7 => PRI_n_jets = 1
+            np.full_like(df["PRI_n_jets"], 1),
+        ),
+        # if PRI_leading_jet_pt == -7 and PRI_leading_jet_pt == -7 => PRI_n_jets = 0
+        np.full_like(df["PRI_n_jets"], 0),
+    )
+    df["PRI_n_jets"] = n_jets
+
     # Engineered features to be passed on to the dataframe
 
     # DER_mass_vis, formule 21
-    with np.errstate(invalid="ignore"):
-        df["DER_mass_vis"] = np.sqrt(
-            (
-                np.sqrt(lep_px**2 + lep_py**2 + lep_pz**2)
-                + np.sqrt(had_px**2 + had_py**2 + had_pz**2)
-            )
-            ** 2
-            - (lep_px + had_px) ** 2
-            - (lep_py + had_py) ** 2
-            - (lep_pz + had_pz) ** 2
-        )
+    df["DER_mass_vis"] = np.sqrt(
+        (np.sqrt(lep_px**2 + lep_py**2 + lep_pz**2) + np.sqrt(had_px**2 + had_py**2 + had_pz**2))
+        ** 2
+        - (lep_px + had_px) ** 2
+        - (lep_py + had_py) ** 2
+        - (lep_pz + had_pz) ** 2
+    )
 
     # DER_pt_h, formule 20
-    with np.errstate(invalid="ignore"):
-        df["DER_pt_h"] = np.sqrt((lep_px + had_px + met_x) ** 2 + (lep_py + had_py + met_y) ** 2)
+    df["DER_pt_h"] = np.sqrt((lep_px + had_px + met_x) ** 2 + (lep_py + had_py + met_y) ** 2)
 
     # DER_mass_transverse_met_lep, formule 22
-    with np.errstate(invalid="ignore"):
-        df["DER_mass_transverse_met_lep"] = np.sqrt(
-            (df["PRI_lep_pt"] + df["PRI_met"]) ** 2 - (lep_px + met_x) ** 2 - (lep_py + met_y) ** 2
-        )
+    df["DER_mass_transverse_met_lep"] = np.sqrt(
+        (df["PRI_lep_pt"] + df["PRI_met"]) ** 2 - (lep_px + met_x) ** 2 - (lep_py + met_y) ** 2
+    )
 
     # DER_mass_jet_jet, formule 21
-    with np.errstate(invalid="ignore"):
-        df["DER_mass_jet_jet"] = np.where(
-            n_jets >= 2,
-            np.sqrt(
-                (
-                    np.sqrt(jet_leading_px**2 + jet_leading_py**2 + jet_leading_pz**2)
-                    + np.sqrt(jet_subleading_px**2 + jet_subleading_py**2 + jet_subleading_pz**2)
-                )
-                ** 2
-                - (jet_leading_px + jet_subleading_px) ** 2
-                - (jet_leading_py + jet_subleading_py) ** 2
-                - (jet_leading_pz + jet_subleading_pz) ** 2
-            ),
-            np.nan,
-        )
+    df["DER_mass_jet_jet"] = np.where(
+        n_jets >= 2,
+        np.sqrt(
+            (
+                np.sqrt(jet_leading_px**2 + jet_leading_py**2 + jet_leading_pz**2)
+                + np.sqrt(jet_subleading_px**2 + jet_subleading_py**2 + jet_subleading_pz**2)
+            )
+            ** 2
+            - (jet_leading_px + jet_subleading_px) ** 2
+            - (jet_leading_py + jet_subleading_py) ** 2
+            - (jet_leading_pz + jet_subleading_pz) ** 2
+        ),
+        np.nan,
+    )
 
     # DER_deltaeta_jet_jet, formule 23
     df["DER_deltaeta_jet_jet"] = np.where(
@@ -174,5 +184,8 @@ def feature_engineering(df):
     # Create the new dataframe
     new_columns = df.columns.tolist()
     df_new = pd.DataFrame(df, columns=new_columns)
+
+    end = time.time()
+    print(f"feature engineering took {end - start:.2f} s")
 
     return df_new
