@@ -4,6 +4,10 @@ from boosted_decision_tree import BoostedDecisionTree
 import sklearn.metrics
 import matplotlib.pyplot as plt
 from HiggsML.datasets import train_test_split
+import pandas as pd
+from HiggsML.datasets import BlackSwan_public_dataset as public_dataset
+from feature_engineering import feature_engineering
+
 
 def amsasimov(s_in,b_in):
     s=np.copy(s_in)
@@ -34,29 +38,107 @@ def significance_score(y_true, y_score, sample_weight=None):
     max_value = np.max(significance_vscore(y_true, y_score, sample_weight))
 
     return max_value
-from HiggsML.datasets import BlackSwan_public_dataset as public_dataset
-from feature_engineering import feature_engineering
-
-if __name__=="__main__":
-    data=public_dataset()
-    data.load_train_set()
-    data_set=data.get_train_set()
-    model=BoostedDecisionTree(data_set,'XGBoost')
-    train_set, test_set= train_test_split(data_set, test_size=0.2, random_state=42,reweight=True)
-    model.fit(feature_engineering(train_set['data']),train_set['labels'],train_set['weights'])
-    y_pred=model.predict(feature_engineering(test_set['data']))
-
-    fsignificance_score = sklearn.metrics.make_scorer(significance_score)
-    Z = significance_vscore(y_true=test_set["labels"], y_score=y_pred,sample_weight=test_set["weights"])
-    print("Z:",Z)
-    x = np.linspace(0, 1, num=len(Z))
 
 
-    plt.plot(x, Z)
+
+data=public_dataset()
+data.load_train_set()
+data_set=data.get_train_set()
+model=BoostedDecisionTree(data_set,'XGBoost')
+train_set, test_set= train_test_split(data_set, test_size=0.2, random_state=42,reweight=True)
+class_weights_train = (
+           train_set['weights'][train_set['labels'] == 0].sum(),
+            train_set['weights'][train_set['labels'] == 1].sum(),
+        )
+train_set['weights'][train_set['labels'] == 0] *= (
+                max(class_weights_train) / class_weights_train[0])
+train_set['weights'][train_set['labels'] == 1] *= (
+                max(class_weights_train) / class_weights_train[1])
+
+model.fit(feature_engineering(train_set['data']),train_set['labels'],train_set['weights'])
+y_pred=model.predict(feature_engineering(test_set['data']))
+print(y_pred)
+fsignificance_score = sklearn.metrics.make_scorer(significance_score)
+Z = significance_vscore(y_true=test_set["labels"], y_score=y_pred,sample_weight=test_set["weights"])
+print("Z:",Z)
+x = np.linspace(0, 1, num=len(Z))
 
 
-    plt.title("BDT Significance")
-    plt.xlabel("Threshold")
-    plt.ylabel("Significance")
-    plt.legend()
-    plt.show()
+plt.plot(x, Z)
+plt.title("BDT Significance")
+plt.xlabel("Threshold")
+plt.ylabel("Significance")
+plt.legend()
+plt.show()
+
+# dfall=pd.DataFrame(y_pred,columns=["score"])
+# ax = dfall[test_set["labels"] == 1].hist(weights= test_set['weights'][test_set["labels"] == 1],density=True,bins=30,label="signal",color='r')
+# dfall[test_set["labels"] == 0].hist(weights= test_set['weights'][test_set["labels"] == 0],density=True,bins=30,label="background",color='b')
+# if test_set['weights'].size != 0:
+#     weights_test_signal = test_set['weights'][test_set["labels"] == 1]
+#     weights_test_background = test_set['weights'][test_set["labels"] == 0]
+# else:
+#     weights_test_signal = None
+#     weights_test_background = None
+# plt.hist(y_pred[test_set["labels"] == 1],
+#                 color='r', alpha=0.5, range=(0,1), bins=30,
+#                 histtype='stepfilled', density=True,
+#                 label='S (train)', weights=weights_test_signal) # alpha is transparancy
+# plt.hist(y_pred[test_set["labels"] == 0],
+#                 color='b', alpha=0.5, range=(0,1), bins=30,
+#                 histtype='stepfilled', density=True,
+#                 label='B (train)', weights=weights_test_background)
+
+
+# hist, bins = np.histogram(y_pred[test_set["labels"] == 1],
+#                                 bins=30, range=(0,1), density=False, weights=weights_test_signal)
+# scale = len(y_pred[test_set["labels"] == 1]) / sum(hist)
+# err = np.sqrt(hist * scale) / scale
+
+# center = (bins[:-1] + bins[1:]) / 2
+# plt.errorbar(center, hist, yerr=err, fmt='o', c='r', label='S (test)')
+
+# hist, bins = np.histogram(y_pred[test_set["labels"] == 0],
+#                                 bins=30, range=(0,1), density=False, weights=weights_test_background)
+# scale = len(y_pred[test_set["labels"] == 0]) / sum(hist)
+# err = np.sqrt(hist * scale) / scale
+
+# center = (bins[:-1] + bins[1:]) / 2
+# plt.legend(loc='best')
+# plt.errorbar(center, hist, yerr=err, fmt='o', c='b', label='B (test)')
+dfall = pd.DataFrame(y_pred, columns=["score"])
+
+# Create the figure and axis
+fig, ax = plt.subplots(figsize=(10, 6))
+
+# Plot the histogram for the signal
+dfall[test_set["labels"] == 1].hist(
+    weights=test_set['weights'][test_set["labels"] == 1],
+    density=True,
+    bins=30,
+    label="signal",
+    color='r',
+    alpha=0.5,
+    ax=ax
+)
+
+# Plot the histogram for the background
+dfall[test_set["labels"] == 0].hist(
+    weights=test_set['weights'][test_set["labels"] == 0],
+    density=True,
+    bins=30,
+    label="background",
+    color='b',
+    alpha=0.5,
+    ax=ax
+)
+
+# Customization
+ax.set_title('Histogram of Scores')
+ax.set_xlabel('Score')
+ax.set_ylabel('Density')
+ax.legend()
+ax.grid(True)
+
+# Display the plot
+plt.show()
