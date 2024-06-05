@@ -8,9 +8,8 @@ from torch.utils.data import TensorDataset
 from sklearn.preprocessing import StandardScaler
 import wandb
 from pytorch_lightning.loggers import WandbLogger
-from sklearn.metrics import roc_curve
-from sklearn.metrics import roc_auc_score
-import matplotlib.pyplot as plt
+
+
 
 class NeuralNetwork(nn.Module):
     """
@@ -28,6 +27,7 @@ class NeuralNetwork(nn.Module):
         self.in1 = nn.Linear(train_data.shape[1], 500)
         self.h1 = nn.Linear(500, 500)
         self.h2 = nn.Linear(500, 500)
+        self.h3= nn.Linear(500, 500)
         self.out = nn.Linear(500, 2)
         self.relu = nn.ReLU()
         self.softmax = nn.Softmax()
@@ -46,6 +46,7 @@ class NeuralNetwork(nn.Module):
         x = self.relu(self.in1(x))
         x = self.relu(self.h1(x))
         x = self.relu(self.h2(x))
+        x = self.relu(self.h3(x))
         x = self.out(x)
         return x
         
@@ -75,7 +76,7 @@ class NeuralNetwork(nn.Module):
         wandb.login()
         wandb.init(project="higgsml")
 
-        epochs = 1
+        epochs = 20
         for epoch in range(epochs):
             for batch in train_dl:
 
@@ -92,13 +93,13 @@ class NeuralNetwork(nn.Module):
         wandb.log({"Training Accuracy": np.mean(labels == preds)})
 
     def predict(self, test_data):
-        test_data = self.scaler.transform(test_data)
-        test_data = torch.tensor(test_data, dtype=torch.float32).to(self.device)
+        data = self.scaler.transform(test_data)
+        data = torch.tensor(data, dtype=torch.float32).to(self.device)
+        
 
         with torch.no_grad():
-            pred = self(test_data).argmax(dim = 1).cpu().numpy()
-        
-        print("PREDS", pred.shape)
+            pred = self.forward(data).cpu().numpy()
+            pred = pred[:, 1]
         return pred
 
 
