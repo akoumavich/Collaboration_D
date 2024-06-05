@@ -3,7 +3,7 @@ import numpy as np
 import time
 
 
-def feature_engineering(df):
+def feature_engineering(df, nan_to_minus_7=False):
     """
     Perform feature engineering operations on the input dataframe
     and create a new dataframe with only the features required for training the model.
@@ -180,6 +180,11 @@ def feature_engineering(df):
             np.nan,
         ),
     )
+
+    # Put NaN back to -7 if needed
+    if nan_to_minus_7:
+        for col in df:
+            df[col][np.logical_not(np.isfinite(df[col]))] = -7
 
     # Create the new dataframe
     new_columns = df.columns.tolist()
