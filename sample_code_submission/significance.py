@@ -1,6 +1,5 @@
 import numpy as np
 from sklearn.preprocessing import StandardScaler
-from boosted_decision_tree import BoostedDecisionTree
 import sklearn.metrics
 import matplotlib.pyplot as plt
 from HiggsML.datasets import train_test_split
@@ -36,40 +35,79 @@ def significance_vscore(y_true, y_score, sample_weight=None):
 
 def significance_score(y_true, y_score, sample_weight=None):
     max_value = np.max(significance_vscore(y_true, y_score, sample_weight))
-
     return max_value
 
+def significance_curve(y_true, y_score, sample_weight=None):
+    Z = significance_vscore(y_true, y_score,sample_weight)
+    print("Z:",Z)
+    x = np.linspace(0, 1, num=len(Z))
 
 
-data=public_dataset()
-data.load_train_set()
-data_set=data.get_train_set()
-model=BoostedDecisionTree(data_set,'XGBoost')
-train_set, test_set= train_test_split(data_set, test_size=0.2, random_state=42,reweight=True)
-class_weights_train = (
-           train_set['weights'][train_set['labels'] == 0].sum(),
-            train_set['weights'][train_set['labels'] == 1].sum(),
-        )
-train_set['weights'][train_set['labels'] == 0] *= (
-                max(class_weights_train) / class_weights_train[0])
-train_set['weights'][train_set['labels'] == 1] *= (
-                max(class_weights_train) / class_weights_train[1])
+    plt.plot(x, Z)
+    plt.title("BDT Significance")
+    plt.xlabel("Threshold")
+    plt.ylabel("Significance")
+    plt.legend()
+    plt.show()
 
-model.fit(feature_engineering(train_set['data']),train_set['labels'],train_set['weights'])
-y_pred=model.predict(feature_engineering(test_set['data']))
-print(y_pred)
-fsignificance_score = sklearn.metrics.make_scorer(significance_score)
-Z = significance_vscore(y_true=test_set["labels"], y_score=y_pred,sample_weight=test_set["weights"])
-print("Z:",Z)
-x = np.linspace(0, 1, num=len(Z))
+def seperation_curve(y_true, y_score, sample_weight=None,bins=30, classifier="XGBoost"):
+    dfall = pd.DataFrame(y_score, columns=["score"])
+
+    fig, ax = plt.subplots(figsize=(10, 6))
 
 
-plt.plot(x, Z)
-plt.title("BDT Significance")
-plt.xlabel("Threshold")
-plt.ylabel("Significance")
-plt.legend()
-plt.show()
+    dfall[y_true == 1].hist(
+        weights=sample_weight[y_true == 1],
+        density=True,
+        bins=bins,
+        label="signal",
+        color='r',
+        alpha=0.5,
+        ax=ax
+    )
+
+
+    dfall[y_true == 0].hist(
+        weights=sample_weight[y_true == 0],
+        density=True,
+        bins=bins,
+        label="background",
+        color='b',
+        alpha=0.5,
+        ax=ax
+    )
+
+    # Customization
+    ax.set_title(f'Histogram of Scores for {classifier}')
+    ax.set_xlabel('Score')
+    ax.set_ylabel('Density')
+    ax.legend()
+    ax.grid(True)
+
+    # Display the plot
+    return fig ,ax
+
+
+
+# data=public_dataset()
+# data.load_train_set()
+# data_set=data.get_train_set()
+# model=BoostedDecisionTree(data_set,'XGBoost')
+# train_set, test_set= train_test_split(data_set, test_size=0.2, random_state=42,reweight=True)
+# class_weights_train = (
+#            train_set['weights'][train_set['labels'] == 0].sum(),
+#             train_set['weights'][train_set['labels'] == 1].sum(),
+#         )
+# train_set['weights'][train_set['labels'] == 0] *= (
+#                 max(class_weights_train) / class_weights_train[0])
+# train_set['weights'][train_set['labels'] == 1] *= (
+#                 max(class_weights_train) / class_weights_train[1])
+
+# model.fit(feature_engineering(train_set['data']),train_set['labels'],train_set['weights'])
+# y_pred=model.predict(feature_engineering(test_set['data']))
+# print(y_pred)
+# fsignificance_score = sklearn.metrics.make_scorer(significance_score)
+
 
 # dfall=pd.DataFrame(y_pred,columns=["score"])
 # ax = dfall[test_set["labels"] == 1].hist(weights= test_set['weights'][test_set["labels"] == 1],density=True,bins=30,label="signal",color='r')
@@ -106,39 +144,4 @@ plt.show()
 # center = (bins[:-1] + bins[1:]) / 2
 # plt.legend(loc='best')
 # plt.errorbar(center, hist, yerr=err, fmt='o', c='b', label='B (test)')
-dfall = pd.DataFrame(y_pred, columns=["score"])
-
-# Create the figure and axis
-fig, ax = plt.subplots(figsize=(10, 6))
-
-# Plot the histogram for the signal
-dfall[test_set["labels"] == 1].hist(
-    weights=test_set['weights'][test_set["labels"] == 1],
-    density=True,
-    bins=30,
-    label="signal",
-    color='r',
-    alpha=0.5,
-    ax=ax
-)
-
-# Plot the histogram for the background
-dfall[test_set["labels"] == 0].hist(
-    weights=test_set['weights'][test_set["labels"] == 0],
-    density=True,
-    bins=30,
-    label="background",
-    color='b',
-    alpha=0.5,
-    ax=ax
-)
-
-# Customization
-ax.set_title('Histogram of Scores')
-ax.set_xlabel('Score')
-ax.set_ylabel('Density')
-ax.legend()
-ax.grid(True)
-
-# Display the plot
-plt.show()
+    
