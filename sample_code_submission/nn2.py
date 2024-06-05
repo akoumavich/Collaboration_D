@@ -22,9 +22,15 @@ class NeuralNetwork(pl.LightningModule):
         #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         super().__init__()
         self.model = nn.Sequential(
-            nn.Linear(train_data.shape[1], 10),
+            nn.Linear(train_data.shape[1], 200),
             nn.ReLU(),
-            nn.Linear(10, 2),
+            nn.Linear(200, 200),
+            nn.ReLU(),
+            nn.Linear(200, 200),
+            nn.ReLU(),
+            nn.Linear(200, 200),
+            nn.ReLU(),
+            nn.Linear(200, 2),
             nn.Softmax()
         )
         
@@ -58,11 +64,19 @@ class NeuralNetwork(pl.LightningModule):
         wandb.login()
         wandb.init(project="higgsml")
         wb_logger = WandbLogger(project="higgsml")
-        trainer = pl.Trainer(max_epochs=1, accelerator='auto', enable_progress_bar = False, logger=wb_logger)
+        lightning_callback = pl.callbacks.ModelCheckpoint(
+            monitor='train_loss',
+            dirpath='./',
+            filename='nn-{epoch:02d}-{train_loss:.2f}',
+            save_top_k=1,
+            mode='min',
+        )
+        trainer = pl.Trainer(max_epochs=10, accelerator='auto', enable_progress_bar = False, logger=wb_logger, callbacks=[lightning_callback])
         trainer.fit(self, train_dataloaders = train_dl)
         preds = np.array(self.predictions)
         labels = np.array(self.real_labels)
         print("Training Accuracy: ", np.mean(labels == preds))
+        self.log("Training Accuracy", np.mean(labels == preds))
 
     def predict(self, test_data):
         test_data = self.scaler.transform(test_data)
