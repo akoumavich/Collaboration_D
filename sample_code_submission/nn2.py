@@ -35,7 +35,7 @@ class NeuralNetwork(nn.Module):
 
         self.loss_fn = nn.CrossEntropyLoss()
 
-        self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
+        self.optimizer = torch.optim.Adam(self.parameters(), lr=2e-3)
         self.scaler = StandardScaler()
         self.predictions = []
         self.real_labels = []
@@ -84,6 +84,7 @@ class NeuralNetwork(nn.Module):
                 loss.backward()
                 self.optimizer.step()
             print("Epoch: ", epoch)
+            wandb.log({"Epoch": epoch})
         
         preds = np.array(self.predictions)
         labels = np.array(self.real_labels)
@@ -95,7 +96,7 @@ class NeuralNetwork(nn.Module):
         test_data = torch.tensor(test_data, dtype=torch.float32)
 
         with torch.no_grad():
-            pred = self.model(test_data).argmax(dim = 1).detach().numpy()
+            pred = self(test_data).argmax(dim = 1).detach().numpy()
         
 
         return pred
