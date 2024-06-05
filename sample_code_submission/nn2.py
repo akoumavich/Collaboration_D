@@ -12,7 +12,7 @@ from sklearn.metrics import roc_curve
 from sklearn.metrics import roc_auc_score
 import matplotlib.pyplot as plt
 
-class NeuralNetwork(pl.LightningModule):
+class NeuralNetwork(nn.Module):
     """
     This Dummy class implements a neural network classifier
     change the code in the fit method to implement a neural network classifier
@@ -20,36 +20,39 @@ class NeuralNetwork(pl.LightningModule):
     """
 
     def __init__(self, train_data):
-        
-        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         super().__init__()
         self.model = nn.Sequential(
-            nn.Linear(train_data.shape[1], 100),
+            nn.Linear(train_data.shape[1], 500),
             nn.ReLU(),
-            nn.Linear(100, 100),
+            nn.Linear(500, 500),
             nn.ReLU(),
-            nn.Linear(100, 100),
+            nn.Linear(500, 500),
             nn.ReLU(),
-            nn.Linear(100, 100),
+            nn.Linear(500, 500),
             nn.ReLU(),
-            nn.Linear(100, 2),
+            nn.Linear(500, 2),
             nn.Softmax()
-        )
+        ).to(self.device)
         
         self.loss_fn = nn.CrossEntropyLoss()
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=5e-4)
+
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
         self.scaler = StandardScaler()
         self.predictions = []
         self.real_labels = []
         
     def training_step(self, batch, batch_idx):
         x, y = batch
-        #y = y.type(torch.LongTensor).to(self.device)
+        x = x.to(self.device)
+        y = y.to(self.device)
+
         y_hat = self.model(x)
         self.predictions.extend(y_hat.argmax(dim=-1).squeeze(0).cpu().numpy())
         self.real_labels.extend(y.cpu().numpy())
         loss = self.loss_fn(y_hat, y)
-        self.log('train_loss', loss)
+        wandb.log({"Loss": loss})
         return loss
 
     def configure_optimizers(self):
@@ -62,19 +65,20 @@ class NeuralNetwork(pl.LightningModule):
         X_train = torch.tensor(X_train, dtype=torch.float32)
         y_train = torch.tensor(y_train, dtype=torch.long)
         
-        train_dl = DataLoader(TensorDataset(X_train, y_train), batch_size=256, shuffle=True)
+        train_dl = DataLoader(TensorDataset(X_train, y_train), batch_size=512, shuffle=True)
         wandb.login()
         wandb.init(project="higgsml")
-        wb_logger = WandbLogger(project="higgsml")
-        lightning_callback = pl.callbacks.ModelCheckpoint(
-            monitor='train_loss',
-            dirpath='./checkpoints/',
-            filename='nn-{epoch:02d}-{train_loss:.2f}',
-            save_top_k=1,
-            mode='min',
-        )
-        trainer = pl.Trainer(max_epochs=10, accelerator='auto', enable_progress_bar = False, logger=wb_logger, callbacks=[lightning_callback])
-        trainer.fit(self, train_dataloaders = train_dl)
+
+        epochs = 10
+        for epoch in range(epochs):
+            for batch in train_dl:
+
+                self.optimizer.zero_grad()
+                loss = self.training_step(batch, 0)
+                loss.backward()
+                self.optimizer.step()
+            print("Epoch: ", epoch)
+        
         preds = np.array(self.predictions)
         labels = np.array(self.real_labels)
         print("Training Accuracy: ", np.mean(labels == preds))
