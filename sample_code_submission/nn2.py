@@ -23,32 +23,38 @@ class NeuralNetwork(nn.Module):
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         super().__init__()
-        self.model = nn.Sequential(
-            nn.Linear(train_data.shape[1], 500),
-            nn.ReLU(),
-            nn.Linear(500, 500),
-            nn.ReLU(),
-            nn.Linear(500, 500),
-            nn.ReLU(),
-            nn.Linear(500, 500),
-            nn.ReLU(),
-            nn.Linear(500, 2),
-            nn.Softmax()
-        ).to(self.device)
         
+        
+        self.in1 = nn.Linear(train_data.shape[1], 500)
+        self.h1 = nn.Linear(500, 500)
+        self.h2 = nn.Linear(500, 500)
+        self.out = nn.Linear(500, 2)
+        self.relu = nn.ReLU()
+        self.softmax = nn.Softmax()
+
+
         self.loss_fn = nn.CrossEntropyLoss()
 
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3)
+        self.optimizer = torch.optim.Adam(self.parameters(), lr=1e-3)
         self.scaler = StandardScaler()
         self.predictions = []
         self.real_labels = []
+
+        self.to(self.device)
+    
+    def forward(self, x):
+        x = self.relu(self.in1(x))
+        x = self.relu(self.h1(x))
+        x = self.relu(self.h2(x))
+        x = self.out(x)
+        return x
         
     def training_step(self, batch, batch_idx):
         x, y = batch
         x = x.to(self.device)
         y = y.to(self.device)
 
-        y_hat = self.model(x)
+        y_hat = self.forward(x)
         self.predictions.extend(y_hat.argmax(dim=-1).squeeze(0).cpu().numpy())
         self.real_labels.extend(y.cpu().numpy())
         loss = self.loss_fn(y_hat, y)
