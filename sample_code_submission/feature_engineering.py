@@ -81,7 +81,9 @@ def feature_engineering(df):
         )
 
     # DER_deltaeta_jet_jet, formule 23
-    df["DER_deltaeta_jet_jet"] = np.abs(df["PRI_jet_leading_eta"] - df["PRI_jet_subleading_eta"])
+    df["DER_deltaeta_jet_jet"] = np.where(
+        n_jets >= 2, np.abs(df["PRI_jet_leading_eta"] - df["PRI_jet_subleading_eta"]), np.nan
+    )
 
     # DER_sum_pt
     df["DER_sum_pt"] = np.where(
@@ -112,13 +114,10 @@ def feature_engineering(df):
     )
     df["DER_met_phi_centrality"] = (A + B) / np.sqrt(A**2 + B**2)
 
-    # DER_mass_transverse_met_lep
-    df["DER_mass_transverse_met_lep"] = np.sqrt(
-        (df["PRI_lep_pt"] + df["PRI_met"]) ** 2 - (lep_px + met_x) ** 2 - (lep_py + met_y) ** 2
+    # DER_prodeta_jet_jet
+    df["DER_prdoeta_jet_jet"] = np.where(
+        n_jets >= 2, df["PRI_jet_leading_eta"] * df["PRI_jet_subleading_eta"], np.nan
     )
-
-    # DER_proeta_jet_jet
-    df["DER_proeta_jet_jet"] = df["PRI_jet_leading_eta"] * df["PRI_jet_subleading_eta"]
 
     # DER_deltar_tau_lep
     df["DER_deltar_tau_lep"] = np.sqrt(
