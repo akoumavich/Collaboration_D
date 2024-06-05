@@ -8,7 +8,9 @@ from torch.utils.data import TensorDataset
 from sklearn.preprocessing import StandardScaler
 import wandb
 from pytorch_lightning.loggers import WandbLogger
-
+from sklearn.metrics import roc_curve
+from sklearn.metrics import roc_auc_score
+import matplotlib.pyplot as plt
 
 class NeuralNetwork(pl.LightningModule):
     """
@@ -66,17 +68,17 @@ class NeuralNetwork(pl.LightningModule):
         wb_logger = WandbLogger(project="higgsml")
         lightning_callback = pl.callbacks.ModelCheckpoint(
             monitor='train_loss',
-            dirpath='./',
+            dirpath='./checkpoints/',
             filename='nn-{epoch:02d}-{train_loss:.2f}',
             save_top_k=1,
             mode='min',
         )
-        trainer = pl.Trainer(max_epochs=10, accelerator='auto', enable_progress_bar = False, logger=wb_logger, callbacks=[lightning_callback])
+        trainer = pl.Trainer(max_epochs=1, accelerator='auto', enable_progress_bar = False, logger=wb_logger, callbacks=[lightning_callback])
         trainer.fit(self, train_dataloaders = train_dl)
         preds = np.array(self.predictions)
         labels = np.array(self.real_labels)
         print("Training Accuracy: ", np.mean(labels == preds))
-        self.log("Training Accuracy", np.mean(labels == preds))
+        wandb.log({"Training Accuracy": np.mean(labels == preds)})
 
     def predict(self, test_data):
         test_data = self.scaler.transform(test_data)
@@ -84,5 +86,6 @@ class NeuralNetwork(pl.LightningModule):
 
         with torch.no_grad():
             pred = self.model(test_data).argmax(dim = 1).detach().numpy()
+        
         print(type(pred))
         return pred
