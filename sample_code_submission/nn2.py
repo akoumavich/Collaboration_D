@@ -35,7 +35,7 @@ class NeuralNetwork(nn.Module):
 
         self.loss_fn = nn.CrossEntropyLoss()
 
-        self.optimizer = torch.optim.Adam(self.parameters(), lr=2e-3)
+        self.optimizer = torch.optim.Adam(self.parameters(), lr=2e-5)
         self.scaler = StandardScaler()
         self.predictions = []
         self.real_labels = []
@@ -75,7 +75,7 @@ class NeuralNetwork(nn.Module):
         wandb.login()
         wandb.init(project="higgsml")
 
-        epochs = 10
+        epochs = 1
         for epoch in range(epochs):
             for batch in train_dl:
 
@@ -98,7 +98,7 @@ class NeuralNetwork(nn.Module):
         with torch.no_grad():
             pred = self(test_data).argmax(dim = 1).cpu().numpy()
         
-
+        print("PREDS", pred.shape)
         return pred
 
 
