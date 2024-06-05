@@ -3,7 +3,7 @@ import numpy as np
 import time
 
 
-def feature_engineering(df, nan_to_minus_7=False):
+def feature_engineering(df, nan_to_minus_7=True):
     """
     Perform feature engineering operations on the input dataframe
     and create a new dataframe with only the features required for training the model.
