@@ -15,6 +15,7 @@ classifiers={'XGBoost':XGBClassifier(learning_rate= 0.4273454179451379, max_dept
 pd.set_option('display.max_columns',100)
 from significance import *
 import time
+import HiggsML.visualization as visualization
 class BoostedDecisionTree:
     """
     This Dummy class implements a decision tree classifier
@@ -27,7 +28,7 @@ class BoostedDecisionTree:
         self.model = classifiers[classifier]
         self.scaler = StandardScaler()
         self.classifier=classifier
-    def fit(self, train_data, labels, weights=None,eval_metric="error"):
+    def fit(self, train_data, labels, weights=None,eval_metric="logloss"):
         self.scaler.fit_transform(train_data)
         X_train_data = self.scaler.transform(train_data)
         if self.classifier=="XGBoost":
@@ -58,8 +59,14 @@ class BoostedDecisionTree:
         return data_set['weights']
     def auc_score(self,y_test,y_pred,data_set):
         return roc_auc_score(y_test,y_pred,sample_weight=self.get_weights(data_set))
-
-    
+    def significance_curve(self,y_test,y_pred,sample_weight=None):
+        Z=significance_curve(y_test,y_pred,sample_weight)
+        threshold=np.linspace(0,1,num=len(Z))
+        plt.plot(threshold,Z)
+        plt.ylabel('Significance')
+        plt.title(f'Significance Curve for {self.classifier} model')
+        plt.legend()
+        plt.show()
     
 if __name__=='__main__':
     data=public_dataset()
@@ -90,9 +97,9 @@ if __name__=='__main__':
     Z_lgb=significance_vscore(y_test,y_pred_lgb,sample_weight=valid_weights)
     Z_skgb=significance_vscore(y_test,y_pred_skgb,sample_weight=valid_weights)
     threshold=np.linspace(0,1,num=len(Z_xgb))
-    plt.plot(threshold,Z_xgb,label='XGBoost')
-    plt.plot(threshold,Z_lgb,label='Lightgbm')
-    plt.plot(threshold,Z_skgb,label='SKlearn GBDT')
+    plt.plot(threshold,Z_xgb,label=f'XGBoost Z_max={np.max(Z_xgb)}')
+    plt.plot(threshold,Z_lgb,label=f'Lightgbm Z_max={np.max(Z_lgb)}')
+    plt.plot(threshold,Z_skgb,label=f'SKlearn GBDT Z_max={np.max(Z_skgb)}')
     plt.xlabel('Threshold')
     plt.ylabel('Significance')
     plt.title('Significance Curve')
@@ -108,3 +115,6 @@ if __name__=='__main__':
     fig, ax=seperation_curve(y_test, y_pred_skgb, sample_weight=valid_weights,bins=30,classifier="SKlearn GBDT")
     plt.savefig("Histogram of Scores fore SKlearn GBDT")
     plt.clf()
+    visualization.roc_curve_wrapper(labels=y_test,score=y_pred_xgb,weights=valid_weights,plot_label="ROC Curve for XGBoost")
+    visualization.roc_curve_wrapper(labels=y_test,score=y_pred_lgb,weights=valid_weights,plot_label="ROC Curve for Lightgbm")
+    visualization.roc_curve_wrapper(labels=y_test,score=y_pred_skgb,weights=valid_weights,plot_label="ROC Curve for SKlearn GBDT")
