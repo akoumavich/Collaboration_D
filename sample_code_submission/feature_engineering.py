@@ -125,7 +125,7 @@ def feature_engineering(df):
     df["DER_met_phi_centrality"] = (A + B) / np.sqrt(A**2 + B**2)
 
     # DER_prodeta_jet_jet
-    df["DER_prdoeta_jet_jet"] = np.where(
+    df["DER_prodeta_jet_jet"] = np.where(
         n_jets >= 2, df["PRI_jet_leading_eta"] * df["PRI_jet_subleading_eta"], np.nan
     )
 
