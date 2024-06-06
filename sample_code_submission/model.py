@@ -2,8 +2,8 @@
 # Dummy Sample Submission
 # ------------------------------
 
-BDT = False
-NN = True
+BDT = True
+NN = False
 
 from statistical_analysis import calculate_saved_info, compute_mu
 from feature_engineering import feature_engineering
@@ -199,6 +199,9 @@ class Model:
             labels=self.valid_set["labels"],
             weights=self.valid_set["weights"],
             plot_label="valid_set" + self.name,
+        )
+        self.model.significance_curve(
+            self.valid_set["labels"], valid_score, sample_weight=self.valid_set["weights"]
         )
 
     def predict(self, test_set):
