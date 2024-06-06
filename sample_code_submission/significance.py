@@ -1,13 +1,16 @@
 import numpy as np
 from sklearn.preprocessing import StandardScaler
-import sklearn.metrics
+from sklearn.metrics import roc_auc_score
 import matplotlib.pyplot as plt
 from HiggsML.datasets import train_test_split
 import pandas as pd
 from HiggsML.datasets import BlackSwan_public_dataset as public_dataset
 from feature_engineering import feature_engineering
-
-
+from xgboost import XGBClassifier
+from sklearn import ensemble
+import lightgbm as lgb
+import time
+from IPython.display import display
 def amsasimov(s_in,b_in):
     s=np.copy(s_in)
     b=np.copy(b_in)
@@ -86,62 +89,86 @@ def seperation_curve(y_true, y_score, sample_weight=None,bins=30, classifier="XG
 
     # Display the plot
     return fig ,ax
+def convert_to_numpy_if_needed(data):
+    if isinstance(data, pd.DataFrame):
+        return data.values
+    return data
+def learning_curve(train_set,test_set,classifier="XGBoost"):
+    train_sizes=np.linspace(0.01,1,25)
+    ntrains=[]
+    test_aucs=[]
+    train_aucs=[]
+    times=[]
+
+    x_train, y_train, weights_train= train_set['data'], train_set['labels'], train_set['weights']
+    x_test, y_test, weights_test = test_set['data'], test_set['labels'], test_set['weights']
 
 
-
-# data=public_dataset()
-# data.load_train_set()
-# data_set=data.get_train_set()
-# model=BoostedDecisionTree(data_set,'XGBoost')
-# train_set, test_set= train_test_split(data_set, test_size=0.2, random_state=42,reweight=True)
-# class_weights_train = (
-#            train_set['weights'][train_set['labels'] == 0].sum(),
-#             train_set['weights'][train_set['labels'] == 1].sum(),
-#         )
-# train_set['weights'][train_set['labels'] == 0] *= (
-#                 max(class_weights_train) / class_weights_train[0])
-# train_set['weights'][train_set['labels'] == 1] *= (
-#                 max(class_weights_train) / class_weights_train[1])
-
-# model.fit(feature_engineering(train_set['data']),train_set['labels'],train_set['weights'])
-# y_pred=model.predict(feature_engineering(test_set['data']))
-# print(y_pred)
-# fsignificance_score = sklearn.metrics.make_scorer(significance_score)
+    x_train = convert_to_numpy_if_needed(x_train)
+    x_test = convert_to_numpy_if_needed(x_test)
 
 
-# dfall=pd.DataFrame(y_pred,columns=["score"])
-# ax = dfall[test_set["labels"] == 1].hist(weights= test_set['weights'][test_set["labels"] == 1],density=True,bins=30,label="signal",color='r')
-# dfall[test_set["labels"] == 0].hist(weights= test_set['weights'][test_set["labels"] == 0],density=True,bins=30,label="background",color='b')
-# if test_set['weights'].size != 0:
-#     weights_test_signal = test_set['weights'][test_set["labels"] == 1]
-#     weights_test_background = test_set['weights'][test_set["labels"] == 0]
-# else:
-#     weights_test_signal = None
-#     weights_test_background = None
-# plt.hist(y_pred[test_set["labels"] == 1],
-#                 color='r', alpha=0.5, range=(0,1), bins=30,
-#                 histtype='stepfilled', density=True,
-#                 label='S (train)', weights=weights_test_signal) # alpha is transparancy
-# plt.hist(y_pred[test_set["labels"] == 0],
-#                 color='b', alpha=0.5, range=(0,1), bins=30,
-#                 histtype='stepfilled', density=True,
-#                 label='B (train)', weights=weights_test_background)
+    for train_size in train_sizes:
+        if classifier=="XGBoost":
+            model = XGBClassifier(learning_rate=0.3409175662018834,max_depth=6,n_estimators=261 )
+        elif classifier=="lightgbm":
+            model= lgb.LGBMClassifier()
+        elif classifier=="sklearnbdt":
+            model=ensemble.HistGradientBoostingClassifier()
+        ntrain = int(len(x_train) * train_size)
+        print("training with ", ntrain, " events")
+        ntrains += [ntrain]
+        starting_time = time.time()
 
+        # Train using the first ntrain events of the training dataset
+        model.fit(x_train[:ntrain, :], y_train[:ntrain], sample_weight=weights_train[:ntrain])
 
-# hist, bins = np.histogram(y_pred[test_set["labels"] == 1],
-#                                 bins=30, range=(0,1), density=False, weights=weights_test_signal)
-# scale = len(y_pred[test_set["labels"] == 1]) / sum(hist)
-# err = np.sqrt(hist * scale) / scale
+        training_time = time.time() - starting_time
+        times += [training_time]
 
-# center = (bins[:-1] + bins[1:]) / 2
-# plt.errorbar(center, hist, yerr=err, fmt='o', c='r', label='S (test)')
+        # Score on the test dataset (always the same)
+        y_pred = model.predict_proba(x_test)[:, 1]
+        auc_test = roc_auc_score(y_true=y_test, y_score=y_pred, sample_weight=weights_test)
+        test_aucs += [auc_test]
 
-# hist, bins = np.histogram(y_pred[test_set["labels"] == 0],
-#                                 bins=30, range=(0,1), density=False, weights=weights_test_background)
-# scale = len(y_pred[test_set["labels"] == 0]) / sum(hist)
-# err = np.sqrt(hist * scale) / scale
+        # Score on the train dataset
+        y_pred_train = model.predict_proba(x_train[:ntrain, :])[:, 1]
+        auc_train = roc_auc_score(y_true=y_train[:ntrain], y_score=y_pred_train, sample_weight=weights_train[:ntrain])
+        train_aucs += [auc_train]
 
-# center = (bins[:-1] + bins[1:]) / 2
-# plt.legend(loc='best')
-# plt.errorbar(center, hist, yerr=err, fmt='o', c='b', label='B (test)')
-    
+    dflearning = pd.DataFrame({
+        "Ntraining": ntrains,
+        "test_auc": test_aucs,
+        "train_auc": train_aucs,
+        "time": times
+    })
+    display(dflearning)
+
+    dflearning.plot.scatter("Ntraining", "test_auc")
+    # Focus on the last point
+    dflearning[4:].plot.scatter("Ntraining", "test_auc")
+    dflearning.plot.scatter("Ntraining", "test_auc")
+    # Focus on the last point
+    dflearning[4:].plot.scatter("Ntraining", "test_auc")
+
+###################plot curve####################""
+    plt.figure(figsize=(10, 6))
+    plt.plot(dflearning["Ntraining"], dflearning["train_auc"], label='Train AUC', marker='o')
+    plt.plot(dflearning["Ntraining"], dflearning["test_auc"], label='Test AUC', marker='o')
+    plt.xlabel("Number of training samples")
+    plt.ylabel("AUC")
+    plt.title("Learning Curve")
+    plt.legend()
+    plt.grid()
+    plt.savefig('learning_curve.png')
+    plt.show()
+
+if __name__=="__main__":
+    ##########Load data and add feature engineering###############
+    data=public_dataset()
+    data.load_train_set()
+    data_set=data.get_train_set()
+    data_set["data"]=feature_engineering(data_set["data"])
+    train_set, test_set= train_test_split(data_set, test_size=0.2, random_state=42,reweight=True)
+    learning_curve(train_set, test_set)
+

@@ -11,7 +11,7 @@ from HiggsML.datasets import train_test_split
 import matplotlib.pyplot as plt
 from feature_engineering import feature_engineering
 from HiggsML.datasets import BlackSwan_public_dataset as public_dataset
-classifiers={'XGBoost':XGBClassifier(learning_rate= 0.4273454179451379, max_depth= 7, n_estimators=240),'lightgbm':lgb.LGBMClassifier(learning_rate= 0.48382410001969056, max_depth= 5,n_estimators=265),'sklearnbdt':ensemble.HistGradientBoostingClassifier(learning_rate= 0.52135689131965, max_depth= 3,max_iter= 115,min_samples_leaf=2)}
+classifiers={'XGBoost':XGBClassifier(learning_rate= 0.4273454179451379, max_depth= 7, n_estimators=240),'lightgbm':lgb.LGBMClassifier(learning_rate= 0.48382410001969056, max_depth= 5,n_estimators=265),'sklearnbdt':ensemble.HistGradientBoostingClassifier(learning_rate= 0.3394981139334837, max_depth= 5,max_iter= 256,min_samples_leaf=2,l2_regularization=1.0392869712218227)}
 pd.set_option('display.max_columns',100)
 from significance import *
 import time
