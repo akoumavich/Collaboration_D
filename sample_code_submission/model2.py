@@ -55,7 +55,6 @@ class Model:
                 a class which you can use to get a dataset with systematics added
                 See sample submission for usage of systematics
 
-                
 
         Returns:
             None
@@ -78,8 +77,6 @@ class Model:
             "sum_bkg_weights: ",
             self.train_set["weights"][self.train_set["labels"] == 0].sum(),
         )
-        print(" \n ")
-        print(" \n ")
         print(" \n ")
 
         self.training_set, self.valid_set = train_test_split(
@@ -132,7 +129,7 @@ class Model:
 
             print("Model is BDT")
         else:
-            from neural_network import NeuralNetwork
+            from nn2 import NeuralNetwork
 
             self.model = NeuralNetwork(train_data=self.training_set["data"])
             self.name = "NN"
@@ -182,7 +179,6 @@ class Model:
         self.valid_set["data"] = feature_engineering(self.valid_set["data"])
 
         valid_score = self.model.predict(self.valid_set["data"])
-        #print("Valid Score: ", valid_score)
 
         valid_results = compute_mu(
             valid_score, self.valid_set["weights"], self.saved_info
