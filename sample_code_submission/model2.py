@@ -43,7 +43,7 @@ class Model:
             your trained model file is now in model_dir, you can load it from here
     """
 
-    def __init__(self, get_train_set=None, systematics=None):
+    def __init__(self, get_train_set=None, systematics=None, load_from_checkpoint=True):
         """
         Model class constructor
 
@@ -59,6 +59,7 @@ class Model:
         Returns:
             None
         """
+        self.load_from_checkpoint = load_from_checkpoint
         self.train_set = (
             get_train_set  # train_set is a dictionary with data, labels and weights
         )
@@ -132,6 +133,8 @@ class Model:
             from nn2 import NeuralNetwork
 
             self.model = NeuralNetwork(train_data=self.training_set["data"])
+            if os.listdir('ckpts') and self.load_from_checkpoint:
+                self.model.load_model('ckpts/' + os.listdir('ckpts')[-1])
             self.name = "NN"
             print("Model is NN")
 

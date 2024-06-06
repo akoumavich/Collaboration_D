@@ -30,7 +30,7 @@ USE_RANDOM_MUS = True
 root_dir = os.getcwd()
 print("Root directory is", root_dir)
 
-input_dir = os.path.join(root_dir, "sample_data")
+input_dir = os.path.join(root_dir, "public_data", "input_data")
 output_dir = os.path.join(root_dir, "sample_result_submission")
 submission_dir = os.path.join(root_dir, "sample_code_submission")
 
