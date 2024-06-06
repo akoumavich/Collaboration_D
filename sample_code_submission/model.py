@@ -2,8 +2,8 @@
 # Dummy Sample Submission
 # ------------------------------
 
-BDT = False
-NN = True
+BDT = True
+NN = False
 
 from statistical_analysis import calculate_saved_info, compute_mu
 from feature_engineering import feature_engineering
