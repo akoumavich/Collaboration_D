@@ -50,7 +50,6 @@ def predict_with_optimized_model(scaler, test_data, y_test, weights_test):
     y_pred_gs = best_model.predict(test_data)
     
     print("... corresponding score on test dataset AUC: ", roc_auc_score(y_true=y_test, y_score=y_pred_gs, sample_weight=weights_test))
-    # print("... corresponding score on test dataset signif: ", significance_score(y_true=y_test, y_score=y_pred_gs, sample_weight=weights_test))
 
 
 ##########Load data and add feature engineering###############
