@@ -16,6 +16,8 @@ pd.set_option('display.max_columns',100)
 from significance import *
 import time
 import HiggsML.visualization as visualization
+import pickle
+
 class BoostedDecisionTree:
     """
     This Dummy class implements a decision tree classifier
@@ -67,7 +69,12 @@ class BoostedDecisionTree:
         plt.title(f'Significance Curve for {self.classifier} model')
         plt.legend()
         plt.show()
-    
+    def save_model(self,file_name):
+        with open(str(file_name)+'.pkl', 'wb') as file:
+            pickle.dump(self, file)
+def load_model(file_name):
+    with open(str(file_name)+'.pkl', 'rb') as file:
+        return  pickle.load(file)  
 if __name__=='__main__':
     data=public_dataset()
     data.load_train_set()
@@ -115,6 +122,17 @@ if __name__=='__main__':
     fig, ax=seperation_curve(y_test, y_pred_skgb, sample_weight=valid_weights,bins=30,classifier="SKlearn GBDT")
     plt.savefig("Histogram of Scores fore SKlearn GBDT")
     plt.clf()
-    visualization.roc_curve_wrapper(labels=y_test,score=y_pred_xgb,weights=valid_weights,plot_label="ROC Curve for XGBoost")
-    visualization.roc_curve_wrapper(labels=y_test,score=y_pred_lgb,weights=valid_weights,plot_label="ROC Curve for Lightgbm")
-    visualization.roc_curve_wrapper(labels=y_test,score=y_pred_skgb,weights=valid_weights,plot_label="ROC Curve for SKlearn GBDT")
+    # visualization.roc_curve_wrapper(labels=y_test,score=y_pred_xgb,weights=valid_weights,plot_label="ROC Curve for XGBoost")
+    # visualization.roc_curve_wrapper(labels=y_test,score=y_pred_lgb,weights=valid_weights,plot_label="ROC Curve for Lightgbm")
+    # visualization.roc_curve_wrapper(labels=y_test,score=y_pred_skgb,weights=valid_weights,plot_label="ROC Curve for SKlearn GBDT")
+    fpr, tpr, roc_score= 
+    plt.plot(fpr, tpr, color='darkgreen',lw=2, label='XGBoost (AUC  = {:.3f})'.format(roc_score))
+    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('Background Efficiency')
+    plt.ylabel('Signal Efficiency')
+    plt.title('ROC curve')
+    plt.legend(loc="lower right")
+    plt.savefig("ROC_lightgbmnonoptimizedfe.pdf")
+    plt.show()

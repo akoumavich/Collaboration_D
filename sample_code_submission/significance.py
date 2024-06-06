@@ -1,6 +1,6 @@
 import numpy as np
 from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import roc_auc_score
+from sklearn.metrics import roc_auc_score, roc_curve
 import matplotlib.pyplot as plt
 from HiggsML.datasets import train_test_split
 import pandas as pd
@@ -162,7 +162,13 @@ def learning_curve(train_set,test_set,classifier="XGBoost"):
     plt.grid()
     plt.savefig('learning_curve.png')
     plt.show()
-
+def roc_curve_plot(model,valid_data,y_test,test_weights):
+    y_pred=model.predict(valid_data)
+    y_pred_binary=model.predict_binary(valid_data)
+    roc_score=model.auc_score(y_test,y_pred,valid_data)
+    print('roc_auc_score :' ,model.auc_score(y_test,y_pred,valid_data) )
+    fpr_xgb,tpr_xgb,_ = roc_curve(y_test,y_pred,sample_weight=test_weights)
+    return fpr_xgb,tpr_xgb, roc_score
 if __name__=="__main__":
     ##########Load data and add feature engineering###############
     data=public_dataset()
