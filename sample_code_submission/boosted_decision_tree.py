@@ -17,7 +17,7 @@ from significance import *
 import time
 import HiggsML.visualization as visualization
 import pickle
-
+import copy
 class BoostedDecisionTree:
     """
     This Dummy class implements a decision tree classifier
@@ -27,7 +27,7 @@ class BoostedDecisionTree:
     """
 
     def __init__(self, train_data, classifier="XGBoost"):
-        self.model = classifiers[classifier]
+        self.model = copy.deepcopy(classifiers[classifier])
         self.scaler = StandardScaler()
         self.classifier=classifier
     def fit(self, train_data, labels, weights=None,eval_metric="logloss"):
