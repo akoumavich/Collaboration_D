@@ -182,6 +182,7 @@ class Model:
         self.valid_set["data"] = feature_engineering(self.valid_set["data"])
 
         valid_score = self.model.predict(self.valid_set["data"])
+        #print("Valid Score: ", valid_score)
 
         valid_results = compute_mu(
             valid_score, self.valid_set["weights"], self.saved_info
