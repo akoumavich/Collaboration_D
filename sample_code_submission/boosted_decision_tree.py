@@ -125,7 +125,7 @@ if __name__=='__main__':
     # visualization.roc_curve_wrapper(labels=y_test,score=y_pred_xgb,weights=valid_weights,plot_label="ROC Curve for XGBoost")
     # visualization.roc_curve_wrapper(labels=y_test,score=y_pred_lgb,weights=valid_weights,plot_label="ROC Curve for Lightgbm")
     # visualization.roc_curve_wrapper(labels=y_test,score=y_pred_skgb,weights=valid_weights,plot_label="ROC Curve for SKlearn GBDT")
-    fpr, tpr, roc_score= 
+    fpr, tpr, roc_score= roc_curve_plot()
     plt.plot(fpr, tpr, color='darkgreen',lw=2, label='XGBoost (AUC  = {:.3f})'.format(roc_score))
     plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
     plt.xlim([0.0, 1.0])
