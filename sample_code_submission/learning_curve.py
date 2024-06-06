@@ -43,8 +43,7 @@ def learning_curve(train_set,test_set):
 
     x_train = convert_to_numpy_if_needed(x_train)
     x_test = convert_to_numpy_if_needed(x_test)
-    #xgb = XGBClassifier()
-    xgb = XGBClassifier() # simpler GBDT, for illustration
+    xgb = XGBClassifier()
 
     for train_size in train_sizes:
         ntrain = int(len(x_train) * train_size)
