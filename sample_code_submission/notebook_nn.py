@@ -13,6 +13,7 @@ import warnings
 import os
 import sys
 
+print(torch.__version__)
 TEST_SETTINGS = {
 "systematics": {  # Systematics to use
     "tes": False, # tau energy scale
@@ -49,13 +50,14 @@ else:
     with open(test_settings_file) as f:
         test_settings = json.load(f)
 
-USE_PUBLIC_DATASET = True
+USE_PUBLIC_DATASET = False
 
 if USE_PUBLIC_DATASET:
     from HiggsML.datasets import BlackSwan_public_dataset as public_dataset
     data = public_dataset()
 else:
-    data = Data(input_dir)
+    from HiggsML.datasets import Data
+    data = Data(input_dir, data_format="parquet")
 
 
 
