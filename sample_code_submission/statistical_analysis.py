@@ -1,3 +1,4 @@
+import math
 import numpy as np
 from scipy import integrate
 from scipy.stats import poisson, norm
@@ -18,116 +19,185 @@ def compute_mu(score, weight, saved_info):
     Feel free to add more functions and change the function parameters
     """
 
-    # score = score.flatten() > 0.5
-    # score = score.astype(int)
+    def n_bins(score, poids, c_alpha, result_fonc):
+        ns, nb, proS, proB, poidsS, poidsB = result_fonc
+        #  Définition des constantes utiles tout au long du programme
+        nombre_intervaux = len(proS)     # découpage de l'intervalle de score
+        # longueur de chaque intervalle de score
+        long_interv = 1/(nombre_intervaux-1)
+        # array de boolées du score:
 
-    # mu = (np.sum(score * weight) - saved_info["beta"]) / saved_info["gamma"]
-    # del_mu_stat = (
-    #     np.sqrt(saved_info["beta"] + saved_info["gamma"]) / saved_info["gamma"]
-    # )
-    # del_mu_sys = abs(0.1 * mu)
-    # del_mu_tot = (1 / 2) * np.sqrt(del_mu_stat**2 + del_mu_sys**2)
+        # création des histogrammes avec le poids
+        # hist = np.histogram(, bins=(0,1,nombre_intervaux)
+        #                      weights=)[0]
 
-    # tentative d'histogramme
+        nb_tot = ns + nb
 
-    """
-    n_sample = saved_info["gamma"] + saved_info["beta"]
+        ind_max = int(c_alpha/long_interv)
+        n_sign = np.zeros(len(nb_tot))
+        n_bruit = np.zeros(len(nb_tot))
+        for i in range(len(nb_tot)):
+            if i > ind_max:
+                n_sign[i] = nb_tot[i]
+            else:
+                n_bruit[i] = nb_tot[i]
+        # nombres de signaux dans chaque bin
 
-    def model(mu):
-        return mu*saved_info["gamma"]+saved_info["beta"]
+        n_sign = n_sign
+        n_bruit = n_bruit
 
-    def loglikelihood(mu, n):
-        return -2*np.log(poisson.pmf(n, model(mu)))
+        return np.round(n_sign + n_bruit).astype(int)
 
-    res = minimize(lambda mu: loglikelihood(mu, n_sample), .5)
-    mu = res["x"][0]
-    """
+    def likely(liste_n, bin_n_S, bin_n_B, pS, pB, W_S, W_B, mu):
+        likel = 0
+        NS = bin_n_S.sum()
+        WS = W_S.sum()
+        NB = bin_n_B.sum()
+        WB = W_B.sum()
+        # print(mu*NS*pS[5] + NB*pB[5])
+        # print(liste_n)
+        # ll = -2*sum([np.log(poisson(mu*NS*pS[i] + NB*pB[i]).pmf(liste_n))
+        #             for i in range(0, np.size(liste_n))])
+        # print(ll)
+        # return ll
+        for i in range(len(liste_n)):
+            lam = mu*NS*pS[i] + NB*pB[i]
+            if lam != 0:
+                likel += -lam + liste_n[i]*math.log(lam)
+        return likel
 
-    y = np.round(saved_info["gamma"] + saved_info["beta"])
+    def minimisateur(liste_n, liste_nS, liste_nB, wS, wB):
+        EPS = 0.0001  # trick to avoid potential division by zero during the minimization
+        # Forbids parameter values to be negative, so mu>EPS here.
+        par_bnds = (EPS, None)
+        return minimize(lambda mu: -2*likely(liste_n, liste_nS, liste_nB, pS, pB, wS, wB, mu), .5, bounds=par_bnds[1])
 
-    def BinContent(k, mu):
-        return mu*saved_info["gamma"][k]+saved_info["beta"][k]
+    def incertitude(liste_n, liste_nS, liste_nB, pS, pB, wS, wB):
+        mu_axis_values = np.linspace(0.5, 1.5, 200)
 
-    # We define the likelihood for a single bin"
-    def likp(k, yk, mu):
-        return poisson(BinContent(k, mu)).pmf(yk)
+        loglike_values = np.array([-2*likely(liste_n, liste_nS, liste_nB, pS, pB, wS, wB, mu)
+                                   for mu in mu_axis_values]).flatten()
+        mini = minimisateur(liste_n, liste_nS, liste_nB, wS, wB).x[0]
+        print(f"L'estimateur de mu chapeau vaut : {mini}")
 
-    # We define the full binned log-likelihood:
-    def bll(mu):
-        return -2*sum([np.log(likp(k, y[k], mu)) for k in range(0, np.size(y))])
+        plt.plot(mu_axis_values, loglike_values -
+                 min(loglike_values), label='log-likelihood')
+        plt.hlines(1, min(mu_axis_values), max(mu_axis_values),
+                   linestyle='--', color='tab:gray')
 
-    EPS = 0.0001  # trick to avoid potential division by zero during the minimization
-    # Forbids parameter values to be negative, so mu>EPS here.
-    par_bnds = ((EPS, None))
-    par0 = 0.5  # quick bad guess to start with some value of mu...
-    res = minimize(bll, par0, bounds=par_bnds[1])
+        # This is the code to search for which mu values the log-likelihood ratio takes
+        # the value 1. For this we pick up first the indexes:
+        idx = np.argwhere(
+            np.diff(np.sign(loglike_values-min(loglike_values)-1))).flatten()
 
-    if res.success:
-        mu = res.x[0]
-        print(f'mu = {res.x[0]:.3f}')
+        # idx = np.append(idx, 50)
 
-    return {
-        "mu_hat": mu,
-        # "del_mu_stat": del_mu_stat,
-        # "del_mu_sys": del_mu_sys,
-        # "del_mu_tot": del_mu_tot,
-    }
+        # and we plot then the position of the mu values:
+        plt.plot(mu_axis_values[idx], [1, 1],
+                 'ko', label=r'$1\sigma$ interval')
+        plt.plot(mu_axis_values[idx[0]]*np.ones(2), [0, 1], 'k--')
+        plt.plot(mu_axis_values[idx[1]]*np.ones(2), [0, 1], 'k--')
+        plt.xlabel(r'$\mu$')
+        plt.ylabel(r'$-2\log {\cal L}(\mu)/{\cal L}(\hat{\mu})$')
+        plt.title(r'Log-likelihood profile with respect to $\mu$')
+
+        # If the log-likelihood ratio is parabolic, sigma_mu is just the half of the
+        # difference between the 2 intersection points of the likelihood ratio with 1.
+        sigma_mu = np.diff(mu_axis_values[idx])/2
+
+        plt.plot(mu_axis_values, ((mu_axis_values-1)/sigma_mu)**2, linestyle='-.',
+                 color='tab:gray', label='parabola approximation')
+        plt.legend(facecolor='w')
+        plt.show()
+
+    train_set = saved_info[0]
+
+    nS, nB, pS, pB, wS, wB = saved_info[1]
+
+    # print(nS, nB)
+
+    liste_n = n_bins(score, train_set["weights"],
+                     0.5, (nS, nB, pS, pB, wS, wB))
+
+    incertitude(liste_n, nS, nB, pS, pB, wS, wB)
+
+    # return {
+    #     "mu_hat": mu,
+    #     # "del_mu_stat": del_mu_stat,
+    #     # "del_mu_sys": del_mu_sys,
+    #     # "del_mu_tot": del_mu_tot,
+    # }
 
 
+# train_set dictionnaire avec "data", "labels" et "weights"
 def calculate_saved_info(model, train_set):
     """
     Calculate the saved_info dictionary for mu calculation
     Replace with actual calculations
     """
 
-    # train_plus_syst = systematics(
-    #     data_set=train_set,
-    #     tes=1.03,
-    #     jes=1.03,
-    #     soft_met=1.0,
-    #     seed=31415,
-    #     w_scale=None,
-    #     bkg_scale=None,
-    #     verbose=0,
-    # )
-
     score = model.predict(train_set["data"])
 
-    # print("score shape before threshold", score.shape)
+    def Proba_hist(n, model, train_set):
+        """
+        Création de deux tableaux : Pb et Ps qui contiendront la probabilité d'avoir du background
+        et du signal respectivement dans chaque Bin 
+        """
+        # score = np.array([random() for i in range(len(train_set["data"]))])
 
-    score = score.flatten() > 0.5
-    score = score.astype(int)
+        # We initialize the probability of an event being a signal or background one to 0.
+        # nS = np.zeros(n+1)
+        # nB = np.zeros(n+1)
+        wS = np.zeros(n)
+        wB = np.zeros(n)
 
-    # print("score shape after threshold", score.shape)
+        for i in range(len(score)):
 
-    gamma = np.sum(train_set["weights"] * score)
+            if train_set["labels"][i] == 1:
+                wS[round((n-1)*score[i])] += train_set['weights'][i]
+            else:
+                wB[round((n-1)*score[i])] += train_set['weights'][i]
 
-    beta = np.sum(train_set["weights"] * (1 - score))
+        S = train_set['weights']*(train_set['labels'])
+        B = train_set['weights']*(1-train_set['labels'])
 
-    # saved_info = {"beta": beta, "gamma": gamma}
+        nS, bin = np.histogram(score,
+                               n, weights=S)
+        nB, bin2 = np.histogram(score,
+                                n, weights=B)
 
-    # print("saved_info", saved_info)
+        pS, bin = np.histogram(score,
+                               n, weights=S, density=True)
+        pS = pS * (bin[1]-bin[0])
+        pB, bin2 = np.histogram(score,
+                                n, weights=B, density=True)
+        pB = pB * (bin[1]-bin[0])
 
-    # We fix here some more or less arbitrary binning:
-    x_bin_edges = np.arange(0, 10.5, .5)
+        def histo_plot(score: list, weight: list, label: list, nbins):
+            """
+            fonction permettant d'afficher les histogrammes
+            """
+            dataTot = np.array([[score[i], weight[i], label[i]]
+                                for i in range(len(score))])
+            dataS = dataTot[dataTot[:, 2] == 1]
+            dataB = dataTot[dataTot[:, 2] == 0]
+            plt.hist(dataS[:, 0], density=True, weights=dataS[:, 1], bins=nbins, range=(
+                0, 1), color="red", alpha=0.5, label="Signal")
+            plt.hist(dataB[:, 0], density=True, weights=dataB[:, 1], bins=nbins, range=(
+                0, 1), color="blue", alpha=0.5, label="Noise")
+            plt.xlabel("score")
+            plt.ylabel("number of occurence")
+            plt.title("Distribution of the score for signal S and noise B")
+            plt.legend()
+            plt.show()
 
-    def Signal(x):
-        train_set[train_set["weights"] == x][train_set["labels"] == 1].sum()
+        histo_plot(score, train_set["weights"], train_set["labels"], n)
+        return nS, nB, pS, pB, wS, wB
 
-    def Background(x):
-        train_set[train_set["weights"] == x][train_set["labels"] == 0].sum()
+    Proba_et_Poids = Proba_hist(25, model, train_set)
 
-    # We initialize the probability of an event being a signal or background one to 0.
-    pS = np.zeros([np.size(x_bin_edges)-1, 1])
-    pB = np.zeros([np.size(x_bin_edges)-1, 1])
-    for k in np.arange(0, np.size(x_bin_edges)-1):
-        pS[k] = integrate.quad(Signal, x_bin_edges[k], x_bin_edges[k+1])[0]
-        pB[k] = integrate.quad(Background, x_bin_edges[k], x_bin_edges[k+1])[0]
-
-    saved_info = {"beta": beta*pB, "gamma": gamma*pS}
-
-    return saved_info
+    return train_set, Proba_et_Poids
 
 
-print(compute_mu([0.2, 0.3, 0.4, 0.5, 0.8], [1, 1, 1, 1, 1],
-                 {'gamma': 60, 'beta': 1000}))
+# print(compute_mu([0.2, 0.3, 0.4, 0.5, 0.8], [1, 1, 1, 1, 1],
+#      {'gamma': 60, 'beta': 1000}))
