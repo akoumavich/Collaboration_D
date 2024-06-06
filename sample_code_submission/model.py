@@ -2,8 +2,8 @@
 # Dummy Sample Submission
 # ------------------------------
 
-BDT = True
-NN = False
+BDT = False
+NN = True
 
 from statistical_analysis import calculate_saved_info, compute_mu
 from feature_engineering import feature_engineering
@@ -59,9 +59,7 @@ class Model:
         Returns:
             None
         """
-        self.train_set = (
-            get_train_set  # train_set is a dictionary with data, labels and weights
-        )
+        self.train_set = get_train_set  # train_set is a dictionary with data, labels and weights
         self.systematics = systematics
 
         del self.train_set["settings"]
@@ -114,10 +112,7 @@ class Model:
         )
         print(" \n ")
 
-
-        self.training_set["data"] = feature_engineering(
-            self.training_set["data"]
-        )
+        self.training_set["data"] = feature_engineering(self.training_set["data"])
 
         print("Training Data: ", self.training_set["data"].shape)
 
@@ -158,31 +153,23 @@ class Model:
 
         for i in range(len(class_weights_train)):  # loop on B then S target
             # training dataset: equalize number of background and signal
-            weights_train[train_labels == i] *= (
-                max(class_weights_train) / class_weights_train[i]
-            )
+            weights_train[train_labels == i] *= max(class_weights_train) / class_weights_train[i]
             # test dataset : increase test weight to compensate for sampling
 
         balanced_set["weights"] = weights_train
 
-        self.model.fit(
-            balanced_set["data"], balanced_set["labels"], balanced_set["weights"]
-        )
+        self.model.fit(balanced_set["data"], balanced_set["labels"], balanced_set["weights"])
 
         self.saved_info = calculate_saved_info(self.model, self.training_set)
 
         train_score = self.model.predict(self.training_set["data"])
-        train_results = compute_mu(
-            train_score, self.training_set["weights"], self.saved_info
-        )
+        train_results = compute_mu(train_score, self.training_set["weights"], self.saved_info)
 
         self.valid_set["data"] = feature_engineering(self.valid_set["data"])
 
         valid_score = self.model.predict(self.valid_set["data"])
 
-        valid_results = compute_mu(
-            valid_score, self.valid_set["weights"], self.saved_info
-        )
+        valid_results = compute_mu(valid_score, self.valid_set["weights"], self.saved_info)
 
         print("Train Results: ")
         for key in train_results.keys():
@@ -205,7 +192,7 @@ class Model:
         )
         valid_visualize.examine_dataset()
         valid_visualize.histogram_dataset()
-        valid_visualize.stacked_histogram("score",mu_hat = 100)
+        valid_visualize.stacked_histogram("score", mu_hat=100)
 
         visualization.roc_curve_wrapper(
             score=valid_score,
