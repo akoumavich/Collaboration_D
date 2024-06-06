@@ -200,9 +200,6 @@ class Model:
             weights=self.valid_set["weights"],
             plot_label="valid_set" + self.name,
         )
-        self.model.significance_curve(
-            self.valid_set["labels"], valid_score, sample_weight=self.valid_set["weights"]
-        )
 
     def predict(self, test_set):
         """
