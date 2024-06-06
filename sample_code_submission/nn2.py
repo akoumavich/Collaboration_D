@@ -18,13 +18,15 @@ class NeuralNetwork(nn.Module):
 
     """
 
-    def __init__(self, train_data):
+    def __init__(self, train_data, input_shape=None, epoch=0):
+        # since we are using an NN that may be loaded from a file, we need to know the input shape which may have changed if FE added new features
+        self.input_shape = train_data.shape[1] if input_shape is None else input_shape
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         super().__init__()
         
         
-        self.in1 = nn.Linear(train_data.shape[1], 500)
+        self.in1 = nn.Linear(self.input_shape, 500)
         self.h1 = nn.Linear(500, 500)
         self.h2 = nn.Linear(500, 500)
         self.h3= nn.Linear(500, 500)
@@ -39,10 +41,15 @@ class NeuralNetwork(nn.Module):
         self.scaler = StandardScaler()
         self.predictions = []
         self.real_labels = []
+        self.accuracy = 0
+        self.epoch = epoch
 
         self.to(self.device)
     
     def forward(self, x):
+        if x.shape[1] != self.input_shape:
+            # if the model uses less features than the input data, only keep the features the model uses
+            x = x.split(self.input_shape, dim=1)[1] 
         x = self.relu(self.in1(x))
         x = self.relu(self.h1(x))
         x = self.relu(self.h2(x))
@@ -65,7 +72,7 @@ class NeuralNetwork(nn.Module):
     def configure_optimizers(self):
         return self.optimizer
 
-    def fit(self, train_data, y_train, weights_train=None):
+    def fit(self, train_data, y_train, weights_train=None, epochs=20):
 
         self.scaler.fit_transform(train_data)
         X_train = self.scaler.transform(train_data)
@@ -76,8 +83,8 @@ class NeuralNetwork(nn.Module):
         wandb.login()
         wandb.init(project="higgsml")
 
-        epochs = 20
-        for epoch in range(epochs):
+        for epoch in range(self.epoch, self.epoch+epochs):
+
             for batch in train_dl:
 
                 self.optimizer.zero_grad()
@@ -87,8 +94,10 @@ class NeuralNetwork(nn.Module):
             print("Epoch: ", epoch)
             wandb.log({"Epoch": epoch})
         
+        self.epoch += epochs
         preds = np.array(self.predictions)
         labels = np.array(self.real_labels)
+        self.accuracy = np.mean(labels == preds)
         print("Training Accuracy: ", np.mean(labels == preds))
         wandb.log({"Training Accuracy": np.mean(labels == preds)})
 
@@ -101,6 +110,30 @@ class NeuralNetwork(nn.Module):
             pred = self.forward(data).cpu().numpy()
             pred = pred[:, 1]
         return pred
+    
+    def save_model(self, path):
+        print(f"Saving model to {path} with accuracy: {self.accuracy} at epoch {self.epoch}")
+        torch.save({
+            'model_state_dict': self.state_dict(),
+            'input_shape': self.input_shape,
+            'accuracy': self.accuracy,
+            'epoch': self.epoch
+        }, path)
+    
+    def load_model(self, path):
+        print("Loading model from ", path)
+        checkpoint = torch.load(path)
+        self.input_shape = checkpoint['input_shape']
+        print(f"Using {self.input_shape} features")
+        self.in1 = nn.Linear(self.input_shape, 500)
+        self.load_state_dict(checkpoint['model_state_dict'])
+        self.accuracy = checkpoint['accuracy']
+        print("loaded model with accuracy: ", self.accuracy)
+        self.epoch = checkpoint['epoch']
+        print("Starting from epoch: ", self.epoch)
+        self.to(self.device)
+        self.eval()
+        print("Finished loading model")
 
 
 # [[d1], [d2], [d3], [d4], [d5], [d6], [d7], [d8], [d9], [d10]]
