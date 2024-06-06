@@ -125,10 +125,11 @@ class Model:
             print("Model is BDT")
         else:
             from neural_network import NeuralNetwork
+
             self.model = NeuralNetwork(train_data=self.training_set["data"])
 
-            if os.listdir('../ckpts'):
-                self.model.load_model('../ckpts/' + os.listdir('../ckpts')[-1])
+            if os.listdir("../ckpts"):
+                self.model.load_model("../ckpts/" + os.listdir("../ckpts")[-1])
             self.name = "NN"
             print("Model is NN")
 
