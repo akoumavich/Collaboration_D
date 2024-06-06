@@ -3,7 +3,7 @@ import numpy as np
 import time
 
 
-def feature_engineering(df, nan_to_minus_7=False):
+def feature_engineering(df, nan_to_minus_7=True):
     """
     Perform feature engineering operations on the input dataframe
     and create a new dataframe with only the features required for training the model.
@@ -14,6 +14,10 @@ def feature_engineering(df, nan_to_minus_7=False):
 
     # Perform calculations to derive features from the DataFrame
     # and store the results in new columns
+
+    # Put -7 to NaN, to cascade them in calculations
+    for col in df:
+        df[col][df[col] == -7] = np.nan
 
     # Engineered features to be used for calculations
 
@@ -35,10 +39,6 @@ def feature_engineering(df, nan_to_minus_7=False):
     jet_subleading_px = df["PRI_jet_subleading_pt"] * np.cos(df["PRI_jet_subleading_phi"])
     jet_subleading_py = df["PRI_jet_subleading_pt"] * np.sin(df["PRI_jet_subleading_phi"])
     jet_subleading_pz = df["PRI_jet_subleading_pt"] * np.sinh(df["PRI_jet_subleading_eta"])
-
-    # Put -7 to NaN
-    for col in df:
-        df[col][df[col] == -7] = np.nan
 
     # Correct PRI_n_jets
     n_jets = np.where(
@@ -191,6 +191,8 @@ def feature_engineering(df, nan_to_minus_7=False):
     df_new = pd.DataFrame(df, columns=new_columns)
 
     end = time.time()
-    print(f"feature engineering took {end - start:.2f} s")
+    print(f"feature engineering took {end - start:.2f} s, results:\n")
+    print(df_new.describe())
+    print()
 
     return df_new
