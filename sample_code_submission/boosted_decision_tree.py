@@ -11,7 +11,7 @@ from HiggsML.datasets import train_test_split
 import matplotlib.pyplot as plt
 from feature_engineering import feature_engineering
 from HiggsML.datasets import BlackSwan_public_dataset as public_dataset
-classifiers={'XGBoost':XGBClassifier(learning_rate= 0.4273454179451379, max_depth= 7, n_estimators=240),'lightgbm':lgb.LGBMClassifier(learning_rate= 0.48382410001969056, max_depth= 5,n_estimators=265),'sklearnbdt':ensemble.HistGradientBoostingClassifier(learning_rate= 0.3394981139334837, max_depth= 5,max_iter= 256,min_samples_leaf=2,l2_regularization=1.0392869712218227)}
+classifiers={'XGBoost':XGBClassifier(learning_rate= 0.3394981139334837, max_depth= 7, n_estimators=256),'lightgbm':lgb.LGBMClassifier(learning_rate= 0.39413404544928654, num_leaves=30,n_estimators=274, max_depth=5),'sklearnbdt':ensemble.HistGradientBoostingClassifier(learning_rate= 0.3394981139334837, max_depth= 5,max_iter= 256,min_samples_leaf=2,l2_regularization=1.0392869712218227)}
 pd.set_option('display.max_columns',100)
 from significance import *
 import time
@@ -34,7 +34,7 @@ class BoostedDecisionTree:
         self.scaler.fit_transform(train_data)
         X_train_data = self.scaler.transform(train_data)
         if self.classifier=="XGBoost":
-            print('fitting XGBoot model')
+            print('fitting XGBoost model')
             start_time=time.time()
             self.model.fit(X_train_data, labels, weights, eval_metric=eval_metric)
             end_time=time.time()

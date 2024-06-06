@@ -33,7 +33,8 @@ def optimize_hyperparameters(x_train,y_train,classifier="XGBoost",sample_weights
     elif classifier=="lightgbm":
         param_dist = {'num_leaves': stats.randint(25, 35), # default 6
                 'n_estimators': stats.randint(30, 300), #default 100
-                'learning_rate': stats.uniform(0.1, 0.5)}
+                'learning_rate': stats.uniform(0.1, 0.5),
+                'max_depth':stats.randint(3, 9)}
         gsearch = RandomizedSearchCV(
             estimator=lgb.LGBMClassifier(),
             param_distributions=param_dist,
