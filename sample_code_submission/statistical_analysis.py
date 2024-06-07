@@ -9,8 +9,6 @@ from numpy import NaN
 import numpy as np
 import pandas as pd
 
-os.chdir('D:/cours/centralesupelec/1A/ST 4/ST4 black swan/EI/Collaboration_D')
-
 
 def compute_mu(score, weight, saved_info):
     """
@@ -31,7 +29,8 @@ def compute_mu(score, weight, saved_info):
         # hist = np.histogram(, bins=(0,1,nombre_intervaux)
         #                      weights=)[0]
 
-        nb_tot = ns + nb
+        nb_tot = np.histogram(score, nombre_intervaux,
+                              weights=weight)[0]
 
         ind_max = int(c_alpha/long_interv)
         n_sign = np.zeros(len(nb_tot))
@@ -73,12 +72,14 @@ def compute_mu(score, weight, saved_info):
         return minimize(lambda mu: -2*likely(liste_n, liste_nS, liste_nB, pS, pB, wS, wB, mu), .5, bounds=par_bnds[1])
 
     def incertitude(liste_n, liste_nS, liste_nB, pS, pB, wS, wB):
-        mu_axis_values = np.linspace(0.5, 1.5, 200)
+
+        mini = minimisateur(liste_n, liste_nS, liste_nB, wS, wB).x[0]
+        print(f"L'estimateur de mu chapeau vaut : {mini}")
+
+        mu_axis_values = np.linspace(mini-1, mini+1, 2000)
 
         loglike_values = np.array([-2*likely(liste_n, liste_nS, liste_nB, pS, pB, wS, wB, mu)
                                    for mu in mu_axis_values]).flatten()
-        mini = minimisateur(liste_n, liste_nS, liste_nB, wS, wB).x[0]
-        print(f"L'estimateur de mu chapeau vaut : {mini}")
 
         plt.plot(mu_axis_values, loglike_values -
                  min(loglike_values), label='log-likelihood')
@@ -105,12 +106,12 @@ def compute_mu(score, weight, saved_info):
         # difference between the 2 intersection points of the likelihood ratio with 1.
         sigma_mu = np.diff(mu_axis_values[idx])/2
 
-        plt.plot(mu_axis_values, ((mu_axis_values-1)/sigma_mu)**2, linestyle='-.',
+        plt.plot(mu_axis_values, ((mu_axis_values-mini)/sigma_mu)**2, linestyle='-.',
                  color='tab:gray', label='parabola approximation')
         plt.legend(facecolor='w')
         plt.show()
 
-        return mini
+        return mini, abs(mini - mu_axis_values[idx[0]])
 
     train_set = saved_info[0]
 
@@ -121,11 +122,11 @@ def compute_mu(score, weight, saved_info):
     liste_n = n_bins(score, train_set["weights"],
                      0.5, (nS, nB, pS, pB, wS, wB))
 
-    mu_hat = incertitude(liste_n, nS, nB, pS, pB, wS, wB)
+    mu_hat, del_mu_stat = incertitude(liste_n, nS, nB, pS, pB, wS, wB)
 
     return {
         "mu_hat": mu_hat,
-        # "del_mu_stat": del_mu_stat,
+        "del_mu_stat": del_mu_stat,
         # "del_mu_sys": del_mu_sys,
         # "del_mu_tot": del_mu_tot,
     }
