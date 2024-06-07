@@ -9,6 +9,8 @@ from statistical_analysis import calculate_saved_info, compute_mu
 from feature_engineering import feature_engineering
 from HiggsML.datasets import train_test_split
 import HiggsML.visualization as visualization
+import numpy as np
+import matplotlib.pyplot as plt
 
 import os
 
@@ -59,9 +61,7 @@ class Model:
         Returns:
             None
         """
-        self.train_set = (
-            get_train_set  # train_set is a dictionary with data, labels and weights
-        )
+        self.train_set = get_train_set  # train_set is a dictionary with data, labels and weights
         self.systematics = systematics
 
         del self.train_set["settings"]
@@ -114,10 +114,7 @@ class Model:
         )
         print(" \n ")
 
-
-        self.training_set["data"] = feature_engineering(
-            self.training_set["data"]
-        )
+        self.training_set["data"] = feature_engineering(self.training_set["data"])
 
         print("Training Data: ", self.training_set["data"].shape)
 
@@ -132,6 +129,9 @@ class Model:
             from neural_network import NeuralNetwork
 
             self.model = NeuralNetwork(train_data=self.training_set["data"])
+
+            if os.listdir("../ckpts"):
+                self.model.load_model("../ckpts/" + os.listdir("../ckpts")[-1])
             self.name = "NN"
             print("Model is NN")
 
@@ -158,31 +158,112 @@ class Model:
 
         for i in range(len(class_weights_train)):  # loop on B then S target
             # training dataset: equalize number of background and signal
-            weights_train[train_labels == i] *= (
-                max(class_weights_train) / class_weights_train[i]
-            )
+            weights_train[train_labels == i] *= max(class_weights_train) / class_weights_train[i]
             # test dataset : increase test weight to compensate for sampling
 
         balanced_set["weights"] = weights_train
 
-        self.model.fit(
-            balanced_set["data"], balanced_set["labels"], balanced_set["weights"]
-        )
+        self.model.fit(balanced_set["data"], balanced_set["labels"], balanced_set["weights"])
 
         self.saved_info = calculate_saved_info(self.model, self.training_set)
 
         train_score = self.model.predict(self.training_set["data"])
-        train_results = compute_mu(
-            train_score, self.training_set["weights"], self.saved_info
-        )
+        train_results = compute_mu(train_score, self.training_set["weights"], self.saved_info)
 
         self.valid_set["data"] = feature_engineering(self.valid_set["data"])
 
+        # ----------------------- STATS ---------------------------
+
+        # We define a list of values for jes
+        jes = np.linspace(0.9, 1.1, 11)
+        tes = np.linspace(0.9, 1.1, 11)  # Same for tes
+        soft_met = np.linspace(0, 5, 11)  # Same for soft_met
+
+        mu_jes = []  # These lists will be filled with mu_hat values
+        mu_tes = []
+        mu_soft_met = []
+
+        for _ in tes:  # for loop on tes
+
+            self.valid_set = systematics(data_set=self.training_set, tes=_)
+            valid_score = self.model.predict(self.valid_set["data"])
+
+            valid_results = compute_mu(valid_score, self.valid_set["weights"], self.saved_info)
+
+            print(f"Train Results tes={_}: ")
+            for key in train_results.keys():
+                print("\t", key, " : ", train_results[key])
+
+            print(f"Valid Results tes={_}: ")
+            for key in valid_results.keys():
+                print("\t", key, " : ", valid_results[key])
+
+            # The mu_hat value is added to the list
+            mu_tes.append(valid_results["mu_hat"])
+
+        for _ in jes:  # Same for jes
+
+            self.valid_set = systematics(data_set=self.training_set, jes=_)
+            valid_score = self.model.predict(self.valid_set["data"])
+
+            valid_results = compute_mu(valid_score, self.valid_set["weights"], self.saved_info)
+
+            print(f"Train Results jes={_}: ")
+            for key in train_results.keys():
+                print("\t", key, " : ", train_results[key])
+
+            print(f"Valid Results jes={_}: ")
+            for key in valid_results.keys():
+                print("\t", key, " : ", valid_results[key])
+            mu_jes.append(valid_results["mu_hat"])
+
+        for _ in soft_met:  # Same for soft_met
+
+            self.valid_set = systematics(data_set=self.training_set, soft_met=_)
+            valid_score = self.model.predict(self.valid_set["data"])
+
+            valid_results = compute_mu(valid_score, self.valid_set["weights"], self.saved_info)
+
+            print(f"Train Results soft_met={_}: ")
+            for key in train_results.keys():
+                print("\t", key, " : ", train_results[key])
+
+            print(f"Valid Results soft_met={_}: ")
+            for key in valid_results.keys():
+                print("\t", key, " : ", valid_results[key])
+            mu_soft_met.append(valid_results["mu_hat"])
+
+        # We plot the evolution of mu_hat compared to tes, then jes and finally soft_met
+        plt.figure()
+        plt.plot(jes, mu_jes, "-xr")
+        plt.axhline(y=1, label="$\hat{\mu}$ = 1", color="grey", linestyle="--")
+        plt.xlabel("jes")
+        plt.ylabel("$\hat{\mu}$")
+        plt.grid()
+        plt.legend()
+
+        plt.figure()
+        plt.plot(tes, mu_tes, "-xr")
+        plt.axhline(y=1, label="$\hat{\mu}$ = 1", color="grey", linestyle="--")
+        plt.xlabel("tes")
+        plt.ylabel("$\hat{\mu}$")
+        plt.grid()
+        plt.legend()
+
+        plt.figure()
+        plt.plot(soft_met, mu_soft_met, "-xr")
+        plt.axhline(y=1, label="$\hat{\mu}$ = 1", color="grey", linestyle="--")
+        plt.xlabel("soft_met")
+        plt.ylabel("$\hat{\mu}$")
+        plt.grid()
+        plt.legend()
+        plt.show()
+
+        # ---------------------------------------------------------
+
         valid_score = self.model.predict(self.valid_set["data"])
 
-        valid_results = compute_mu(
-            valid_score, self.valid_set["weights"], self.saved_info
-        )
+        valid_results = compute_mu(valid_score, self.valid_set["weights"], self.saved_info)
 
         print("Train Results: ")
         for key in train_results.keys():
@@ -205,7 +286,7 @@ class Model:
         )
         valid_visualize.examine_dataset()
         valid_visualize.histogram_dataset()
-        valid_visualize.stacked_histogram("score",mu_hat = 100)
+        valid_visualize.stacked_histogram("score", mu_hat=100)
 
         visualization.roc_curve_wrapper(
             score=valid_score,
