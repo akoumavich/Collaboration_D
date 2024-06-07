@@ -37,9 +37,9 @@ class BoostedDecisionTree:
     def fit(self, train_data, labels, weights=None, eval_metric="logloss"):
         self.scaler.fit_transform(train_data)
         X_train_data = self.scaler.transform(train_data)
-        if self.classifier=="XGBoost":
-            print('fitting XGBoost model')
-            start_time=time.time()
+        if self.classifier == "XGBoost":
+            print("fitting XGBoost model")
+            start_time = time.time()
             self.model.fit(X_train_data, labels, weights, eval_metric=eval_metric)
             end_time = time.time()
             print(f"XGBoost model fitted in {end_time-start_time} s")
@@ -147,9 +147,9 @@ if __name__ == "__main__":
     # visualization.roc_curve_wrapper(labels=y_test,score=y_pred_xgb,weights=valid_weights,plot_label="ROC Curve for XGBoost")
     # visualization.roc_curve_wrapper(labels=y_test,score=y_pred_lgb,weights=valid_weights,plot_label="ROC Curve for Lightgbm")
     # visualization.roc_curve_wrapper(labels=y_test,score=y_pred_skgb,weights=valid_weights,plot_label="ROC Curve for SKlearn GBDT")
-    fpr, tpr, roc_score= roc_curve_plot()
-    plt.plot(fpr, tpr, color='darkgreen',lw=2, label='XGBoost (AUC  = {:.3f})'.format(roc_score))
-    plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+    fpr, tpr, roc_score = roc_curve_plot()
+    plt.plot(fpr, tpr, color="darkgreen", lw=2, label="XGBoost (AUC  = {:.3f})".format(roc_score))
+    plt.plot([0, 1], [0, 1], color="navy", lw=2, linestyle="--")
     plt.xlim([0.0, 1.0])
     plt.ylim([0.0, 1.05])
     plt.xlabel("Background Efficiency")

@@ -33,9 +33,11 @@ class NeuralNetwork(nn.Module):
         self.h1 = nn.Linear(500, 500)
         self.h2 = nn.Linear(500, 500)
         self.h3 = nn.Linear(500, 500)
-        self.out = nn.Linear(500, 2)
+        self.out = nn.Linear(500, 1)
         self.relu = nn.ReLU()
-        self.softmax = nn.Softmax()
+        self.norm = nn.BatchNorm1d(500)
+        self.lastnorm = nn.BatchNorm1d(1)
+        self.last = nn.Sigmoid()
 
         self.loss_fn = nn.CrossEntropyLoss()
 
@@ -53,11 +55,17 @@ class NeuralNetwork(nn.Module):
             # if the model uses less features than the input data, only keep the features the model uses
             x = x.split(self.input_shape, dim=1)[1]
         x = self.relu(self.in1(x))
+        x = self.norm(x)
         x = self.relu(self.h1(x))
+        x = self.norm(x)
         x = self.relu(self.h2(x))
+        x = self.norm(x)
         x = self.relu(self.h3(x))
+        x = self.norm(x)
         x = self.out(x)
-        return x
+        x = self.last(x)
+        x = self.lastnorm(x)
+        return torch.cat([1 - x, x], dim=1)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
