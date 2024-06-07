@@ -21,7 +21,12 @@ class NeuralNetwork(nn.Module):
         # since we are using an NN that may be loaded from a file, we need to know the input shape which may have changed if FE added new features
         self.input_shape = train_data.shape[1] if input_shape is None else input_shape
 
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device(
+            "cuda"
+            if torch.cuda.is_available()
+            else ("mps" if torch.backends.mps.is_available() else "cpu")
+        )
+        print("Using device: ", self.device)
         super().__init__()
 
         self.in1 = nn.Linear(self.input_shape, 500)
@@ -69,7 +74,7 @@ class NeuralNetwork(nn.Module):
     def configure_optimizers(self):
         return self.optimizer
 
-    def fit(self, train_data, y_train, weights_train=None, epochs=20):
+    def fit(self, train_data, y_train, weights_train=None, epochs=1):
 
         self.scaler.fit_transform(train_data)
         X_train = self.scaler.transform(train_data)
@@ -92,18 +97,26 @@ class NeuralNetwork(nn.Module):
             wandb.log({"Epoch": epoch})
 
         self.epoch += epochs
+
         preds = np.array(self.predictions)
         labels = np.array(self.real_labels)
         self.accuracy = np.mean(labels == preds)
         print("Training Accuracy: ", np.mean(labels == preds))
         wandb.log({"Training Accuracy": np.mean(labels == preds)})
+        self.save_model(f"../ckpts/model-{self.epoch}.pth")
 
     def predict(self, test_data):
-        data = self.scaler.transform(test_data)
-        data = torch.tensor(data, dtype=torch.float32).to(self.device)
+        x = self.scaler.transform(test_data)
+        x = torch.tensor(x, dtype=torch.float32).to(self.device)
+        dl = DataLoader(TensorDataset(x), batch_size=512, shuffle=False)
+
+        pred = []
 
         with torch.no_grad():
-            pred = self.forward(data).cpu().numpy()
+            for batch in dl:
+                x = batch[0]
+                pred.extend(self.forward(x).cpu().numpy())
+            pred = np.array(pred)
             pred = pred[:, 1]
         return pred
 
@@ -118,6 +131,9 @@ class NeuralNetwork(nn.Module):
             },
             path,
         )
+
+        self.predictions = []
+        self.real_labels = []
 
     def load_model(self, path):
         print("Loading model from ", path)
