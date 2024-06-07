@@ -57,7 +57,7 @@ class NeuralNetwork(nn.Module):
         x = self.relu(self.h2(x))
         x = self.relu(self.h3(x))
         x = self.out(x)
-        return x
+        return self.softmax(x)
 
     def training_step(self, batch, batch_idx):
         x, y = batch
