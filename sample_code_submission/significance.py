@@ -29,14 +29,10 @@ def amsasimov(s_in, b_in):
 
 def significance_vscore(y_true, y_score, sample_weight=None):
     if sample_weight is None:
-        sample_weight = np.full(len(y_true), 1.0)
-    bins = np.linspace(0, 1.0, 101)
-    s_hist, bin_edges = np.histogram(
-        y_score[y_true == 1], bins=bins, weights=sample_weight[y_true == 1], density=True
-    )
-    b_hist, bin_edges = np.histogram(
-        y_score[y_true == 0], bins=bins, weights=sample_weight[y_true == 0], density=True
-    )
+        sample_weight = np.full(len(y_true), 1.)
+    bins = np.linspace(0, 1., 101)
+    s_hist, bin_edges = np.histogram(y_score[y_true == 1], bins=bins, weights=sample_weight[y_true == 1],density=False)
+    b_hist, bin_edges = np.histogram(y_score[y_true == 0], bins=bins, weights=sample_weight[y_true == 0],density=False)
     s_cumul = np.cumsum(s_hist[::-1])[::-1]
     b_cumul = np.cumsum(b_hist[::-1])[::-1]
     significance = amsasimov(s_cumul, b_cumul)
@@ -170,18 +166,12 @@ def learning_curve(train_set, test_set, classifier="XGBoost"):
     plt.grid()
     plt.savefig("learning_curve.png")
     plt.show()
-
-
-def roc_curve_plot(model, valid_data, y_test, test_weights):
-    y_pred = model.predict(valid_data)
-    y_pred_binary = model.predict_binary(valid_data)
-    roc_score = model.auc_score(y_test, y_pred, valid_data)
-    print("roc_auc_score :", model.auc_score(y_test, y_pred, valid_data))
-    fpr_xgb, tpr_xgb, _ = roc_curve(y_test, y_pred, sample_weight=test_weights)
-    return fpr_xgb, tpr_xgb, roc_score
-
-
-if __name__ == "__main__":
+def roc_curve_plot(model,valid_data,y_pred,y_test,test_weights):
+    roc_score=model.auc_score(y_test,y_pred,valid_data)
+    print('roc_auc_score :' ,model.auc_score(y_test,y_pred,valid_data) )
+    fpr,tpr,_ = roc_curve(y_test,y_pred,sample_weight=test_weights)
+    return fpr,tpr, roc_score
+if __name__=="__main__":
     ##########Load data and add feature engineering###############
     data = public_dataset()
     data.load_train_set()
