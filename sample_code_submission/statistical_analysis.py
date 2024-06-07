@@ -110,6 +110,8 @@ def compute_mu(score, weight, saved_info):
         plt.legend(facecolor='w')
         plt.show()
 
+        return mini
+
     train_set = saved_info[0]
 
     nS, nB, pS, pB, wS, wB = saved_info[1]
@@ -119,14 +121,14 @@ def compute_mu(score, weight, saved_info):
     liste_n = n_bins(score, train_set["weights"],
                      0.5, (nS, nB, pS, pB, wS, wB))
 
-    incertitude(liste_n, nS, nB, pS, pB, wS, wB)
+    mu_hat = incertitude(liste_n, nS, nB, pS, pB, wS, wB)
 
-    # return {
-    #     "mu_hat": mu,
-    #     # "del_mu_stat": del_mu_stat,
-    #     # "del_mu_sys": del_mu_sys,
-    #     # "del_mu_tot": del_mu_tot,
-    # }
+    return {
+        "mu_hat": mu_hat,
+        # "del_mu_stat": del_mu_stat,
+        # "del_mu_sys": del_mu_sys,
+        # "del_mu_tot": del_mu_tot,
+    }
 
 
 # train_set dictionnaire avec "data", "labels" et "weights"
