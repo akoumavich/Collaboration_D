@@ -2,8 +2,8 @@
 # Dummy Sample Submission
 # ------------------------------
 
-BDT = False
-NN = True
+BDT = True
+NN = False
 
 from statistical_analysis import calculate_saved_info, compute_mu
 from feature_engineering import feature_engineering
@@ -127,6 +127,9 @@ class Model:
             from neural_network import NeuralNetwork
 
             self.model = NeuralNetwork(train_data=self.training_set["data"])
+
+            if os.listdir("../ckpts"):
+                self.model.load_model("../ckpts/" + os.listdir("../ckpts")[-1])
             self.name = "NN"
             print("Model is NN")
 
@@ -200,7 +203,7 @@ class Model:
             weights=self.valid_set["weights"],
             plot_label="valid_set" + self.name,
         )
-        
+
     def predict(self, test_set):
         """
         Params:

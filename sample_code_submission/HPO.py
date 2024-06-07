@@ -11,10 +11,14 @@ from sklearn import ensemble
 # Define global variable to store the best model
 best_model = None
 
-param_dist_LGBM = {'num_leaves': stats.randint(25, 35), # default 6
-                'n_estimators': stats.randint(30, 300), #default 100
-                'learning_rate': stats.uniform(0.1, 0.5),
-                'lambda_l2': stats.uniform(0,2)}
+param_dist_LGBM = {
+    "num_leaves": stats.randint(25, 35),  # default 6
+    "n_estimators": stats.randint(30, 300),  # default 100
+    "learning_rate": stats.uniform(0.1, 0.5),
+    "lambda_l2": stats.uniform(0, 2),
+}
+
+
 # Function to optimize hyperparameters
 def optimize_hyperparameters(x_train,y_train,classifier="XGBoost",sample_weights=None, cv=5, n_iter=20):
     global best_model
@@ -65,26 +69,31 @@ def optimize_hyperparameters(x_train,y_train,classifier="XGBoost",sample_weights
     print("Best score (on train dataset CV): ", gsearch.best_score_)
     return gsearch.best_params_
 
+
 # Function to predict with the optimized model
 def predict_with_optimized_model(scaler, test_data, y_test, weights_test):
     global best_model
 
     if best_model is None:
         raise RuntimeError("Hyperparameter optimization not performed yet.")
-    
+
     y_pred_gs = best_model.predict(test_data)
-    
-    print("... corresponding score on test dataset AUC: ", roc_auc_score(y_true=y_test, y_score=y_pred_gs, sample_weight=weights_test))
 
-if __name__=="__main__":
+    print(
+        "... corresponding score on test dataset AUC: ",
+        roc_auc_score(y_true=y_test, y_score=y_pred_gs, sample_weight=weights_test),
+    )
+
+
+if __name__ == "__main__":
     ##########Load data and add feature engineering###############
-    data=public_dataset()
+    data = public_dataset()
     data.load_train_set()
-    data_set=data.get_train_set()
-    data_set['data']=feature_engineering(data_set['data'])
-    train_set, test_set= train_test_split(data_set, test_size=0.2, random_state=42,reweight=True)
-
-
+    data_set = data.get_train_set()
+    data_set["data"] = feature_engineering(data_set["data"])
+    train_set, test_set = train_test_split(data_set, test_size=0.2, random_state=42, reweight=True)
 
     optimize_hyperparameters(train_set)
-    predict_with_optimized_model(StandardScaler(),test_set['data'],test_set['labels'],test_set['weights'])
+    predict_with_optimized_model(
+        StandardScaler(), test_set["data"], test_set["labels"], test_set["weights"]
+    )
