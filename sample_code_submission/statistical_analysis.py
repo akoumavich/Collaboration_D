@@ -82,7 +82,7 @@ def compute_mu(score, weight, saved_info):
 
         mu_axis_values = np.linspace(mini-1, mini+1, 2000)
 
-        loglike_values = np.array([-2*likely(liste_n, liste_nS, liste_nB, pS, pB, wS, wB, mu)])
+        loglike_values = np.array([-2*likely(liste_n, liste_nS, liste_nB, pS, pB, wS, wB, mu) for mu in mu_axis_values]).flatten()
 
         plt.plot(mu_axis_values, loglike_values - min(loglike_values), label="log-likelihood")
         plt.hlines(1, min(mu_axis_values), max(mu_axis_values), linestyle="--", color="tab:gray")
