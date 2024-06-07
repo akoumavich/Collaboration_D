@@ -9,8 +9,6 @@ from numpy import NaN
 import numpy as np
 import pandas as pd
 
-os.chdir("D:/cours/centralesupelec/1A/ST 4/ST4 black swan/EI/Collaboration_D")
-
 
 def compute_mu(score, weight, saved_info):
     """
