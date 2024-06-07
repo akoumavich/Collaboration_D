@@ -2,16 +2,17 @@
 # Dummy Sample Submission
 # ------------------------------
 
-BDT = True
-NN = False
+BDT = False
+NN = True
 
 from statistical_analysis import calculate_saved_info, compute_mu
 from feature_engineering import feature_engineering
 from HiggsML.datasets import train_test_split
 import HiggsML.visualization as visualization
+from HiggsML.systematics import systematics
 import numpy as np
 import matplotlib.pyplot as plt
-from HiggsML.systematics import systematics
+
 import os
 
 

@@ -8,6 +8,7 @@ from sklearn.preprocessing import StandardScaler
 from feature_engineering import feature_engineering
 from xgboost import XGBClassifier
 from sklearn import ensemble
+
 # Define global variable to store the best model
 best_model = None
 
@@ -20,7 +21,9 @@ param_dist_LGBM = {
 
 
 # Function to optimize hyperparameters
-def optimize_hyperparameters(x_train,y_train,classifier="XGBoost",sample_weights=None, cv=5, n_iter=20):
+def optimize_hyperparameters(
+    x_train, y_train, classifier="XGBoost", sample_weights=None, cv=5, n_iter=20
+):
     global best_model
     if classifier=="XGBoost":
         param_dist = {'max_depth': stats.randint(3, 20), # default 6
@@ -47,13 +50,14 @@ def optimize_hyperparameters(x_train,y_train,classifier="XGBoost",sample_weights
             n_iter=n_iter,
             cv=cv,
         )
-    elif classifier=="sklearnbdt":
+    elif classifier == "sklearnbdt":
         param_dist = {
-        'learning_rate': stats.uniform(0.1, 0.5),
-        'max_iter': stats.randint(100, 300),
-        'max_leaf_nodes': [31, 63, 127],
-        'max_depth': [3, 5, 7, 10],
-        'min_samples_leaf': [10, 20, 30]}
+            "learning_rate": stats.uniform(0.1, 0.5),
+            "max_iter": stats.randint(100, 300),
+            "max_leaf_nodes": [31, 63, 127],
+            "max_depth": [3, 5, 7, 10],
+            "min_samples_leaf": [10, 20, 30],
+        }
         gsearch = RandomizedSearchCV(
             estimator=ensemble.HistGradientBoostingClassifier(),
             param_distributions=param_dist,
