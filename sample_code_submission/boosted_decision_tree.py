@@ -14,9 +14,9 @@ from feature_engineering import feature_engineering
 from HiggsML.datasets import BlackSwan_public_dataset as public_dataset
 
 classifiers = {
-    "XGBoost": XGBClassifier(learning_rate=0.4273454179451379, max_depth=7, n_estimators=240),
+    "XGBoost": XGBClassifier(learning_rate=0.3394981139334837, max_depth=7, n_estimators=256),
     "lightgbm": lgb.LGBMClassifier(
-        learning_rate=0.48382410001969056, max_depth=5, n_estimators=265
+        learning_rate=0.39413404544928654, num_leaves=30, n_estimators=274, max_depth=5
     ),
     "sklearnbdt": ensemble.HistGradientBoostingClassifier(
         learning_rate=0.3394981139334837,
@@ -31,6 +31,7 @@ from significance import *
 import time
 import HiggsML.visualization as visualization
 import pickle
+import copy
 
 
 class BoostedDecisionTree:
@@ -42,7 +43,7 @@ class BoostedDecisionTree:
     """
 
     def __init__(self, train_data, classifier="XGBoost"):
-        self.model = classifiers[classifier]
+        self.model = copy.deepcopy(classifiers[classifier])
         self.scaler = StandardScaler()
         self.classifier = classifier
 
@@ -50,7 +51,7 @@ class BoostedDecisionTree:
         self.scaler.fit_transform(train_data)
         X_train_data = self.scaler.transform(train_data)
         if self.classifier == "XGBoost":
-            print("fitting XGBoot model")
+            print("fitting XGBoost model")
             start_time = time.time()
             self.model.fit(X_train_data, labels, weights, eval_metric=eval_metric)
             end_time = time.time()
@@ -159,7 +160,6 @@ if __name__ == "__main__":
     # visualization.roc_curve_wrapper(labels=y_test,score=y_pred_xgb,weights=valid_weights,plot_label="ROC Curve for XGBoost")
     # visualization.roc_curve_wrapper(labels=y_test,score=y_pred_lgb,weights=valid_weights,plot_label="ROC Curve for Lightgbm")
     # visualization.roc_curve_wrapper(labels=y_test,score=y_pred_skgb,weights=valid_weights,plot_label="ROC Curve for SKlearn GBDT")
-
     fpr, tpr, roc_score = roc_curve_plot()
     plt.plot(fpr, tpr, color="darkgreen", lw=2, label="XGBoost (AUC  = {:.3f})".format(roc_score))
     plt.plot([0, 1], [0, 1], color="navy", lw=2, linestyle="--")
