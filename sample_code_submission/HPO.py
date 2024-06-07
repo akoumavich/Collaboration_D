@@ -19,28 +19,28 @@ param_dist_LGBM = {'num_leaves': stats.randint(25, 35), # default 6
 def optimize_hyperparameters(x_train,y_train,classifier="XGBoost",sample_weights=None, cv=5, n_iter=20):
     global best_model
     if classifier=="XGBoost":
-        param_dist = {'max_depth': stats.randint(3, 9), # default 6
-                'n_estimators': stats.randint(30, 300), #default 100
-                'learning_rate': stats.uniform(0.1, 0.5)}
+        param_dist = {'max_depth': stats.randint(3, 20), # default 6
+                'n_estimators': stats.randint(30, 370), #default 100
+                'learning_rate': stats.uniform(0.05, 0.5)
+               }
         gsearch = RandomizedSearchCV(
             estimator=XGBClassifier(),
             param_distributions=param_dist,
             scoring="roc_auc",
-            n_jobs=-1,
             n_iter=n_iter,
             cv=cv,
         )
     elif classifier=="lightgbm":
-        param_dist = {'num_leaves': stats.randint(25, 35), # default 6
+        param_dist = {'num_leaves': stats.randint(20, 40), 
                 'n_estimators': stats.randint(30, 300), #default 100
-                'learning_rate': stats.uniform(0.1, 0.5),
-                'max_depth':stats.randint(3, 9)}
+                'learning_rate': stats.uniform(0.05, 0.5),
+                'max_depth':stats.randint(3, 15)}# default 6
+                 
         gsearch = RandomizedSearchCV(
             estimator=lgb.LGBMClassifier(),
             param_distributions=param_dist,
             scoring="roc_auc",
             n_iter=n_iter,
-            n_jobs=-1,
             cv=cv,
         )
     elif classifier=="sklearnbdt":
@@ -55,7 +55,6 @@ def optimize_hyperparameters(x_train,y_train,classifier="XGBoost",sample_weights
             param_distributions=param_dist,
             scoring="roc_auc",
             n_iter=n_iter,
-            n_jobs=-1,
             cv=cv,
         )
     # Ensure weights are passed during fitting

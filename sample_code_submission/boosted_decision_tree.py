@@ -11,13 +11,15 @@ from HiggsML.datasets import train_test_split
 import matplotlib.pyplot as plt
 from feature_engineering import feature_engineering
 from HiggsML.datasets import BlackSwan_public_dataset as public_dataset
-classifiers={'XGBoost':XGBClassifier(learning_rate= 0.3394981139334837, max_depth= 7, n_estimators=256),'lightgbm':lgb.LGBMClassifier(learning_rate= 0.39413404544928654, num_leaves=30,n_estimators=274, max_depth=5),'sklearnbdt':ensemble.HistGradientBoostingClassifier(learning_rate= 0.3394981139334837, max_depth= 5,max_iter= 256,min_samples_leaf=2,l2_regularization=1.0392869712218227)}
 pd.set_option('display.max_columns',100)
 from significance import *
 import time
 import HiggsML.visualization as visualization
 import pickle
 import copy
+
+classifiers={'XGBoost':XGBClassifier(learning_rate=0.13458629910917658,max_depth=14,n_estimators=273),'lightgbm':lgb.LGBMClassifier(learning_rate=0.32001288400192063,n_estimators=237,max_depth=5,num_leaves=34),'sklearnbdt':ensemble.HistGradientBoostingClassifier(learning_rate=0.1310745634625989,max_depth=7,max_iter=292,max_leaf_nodes=127,min_samples_leaf=20)}
+
 class BoostedDecisionTree:
     """
     This Dummy class implements a decision tree classifier
